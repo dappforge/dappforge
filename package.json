@@ -22,8 +22,8 @@
   "scripts": {
     "vscode:prepublish": "yarn run package",
     "compile": "webpack",
-    "watch": "webpack --watch",
-    "package": "webpack --mode production --devtool hidden-source-map",
+    "watch": "concurrently \"rollup -c --bundleConfigAsCjs -w\" \"webpack --watch --config ./build/node-extension.webpack.config.js\"",
+    "package": "webpack --mode production --devtool hidden-source-map --config ./build/node-extension.webpack.config.js",
     "compile-tests": "tsc -p . --outDir out",
     "watch-tests": "tsc -p . -w --outDir out",
     "pretest": "yarn run compile-tests && yarn run compile && yarn run lint",
