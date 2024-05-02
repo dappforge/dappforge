@@ -1,7 +1,7 @@
 {
   "name": "dappforge",
   "displayName": "dAppForge",
-  "description": "AI tool tailored for blockchain developers to build better dApps faster, reducing development time. ",
+  "description": "AI tool tailored for blockchain developers to build better dApps faster, reducing development time.",
   "version": "0.0.1",
   "engines": {
     "vscode": "^1.88.0"
