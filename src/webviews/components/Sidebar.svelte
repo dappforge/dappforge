@@ -1,7 +1,25 @@
 <script lang="ts">
+  let questions: Array<string> = [];
+  let question: string = "";
 </script>
 
-<h1>Hello from dAppForge sidebar!!!</h1>
+<h1>dAppForge Chat</h1>
+
+<form
+  on:submit|preventDefault={() => {
+    questions = [...questions, question];
+    question = "";
+  }}
+>
+  <input type="text" bind:value={question} placeholder="Ask a question" />
+  <button type="submit">Ask</button>
+</form>
+
+<ul>
+  {#each questions as question}
+    <li>{question}</li>
+  {/each}
+</ul>
 
 <style>
   h1 {

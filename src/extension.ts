@@ -20,7 +20,18 @@ export function activate(context: vscode.ExtensionContext) {
 	context.subscriptions.push(
 		vscode.window.registerWebviewViewProvider("dappforge-sidebar", sidebarProvider)
 	);
-	
+
+	context.subscriptions.push(
+		vscode.commands.registerCommand("dappforge.refresh", async () => {
+		  // HelloWorldPanel.kill();
+		  // HelloWorldPanel.createOrShow(context.extensionUri);
+		  await vscode.commands.executeCommand("workbench.action.closeSidebar");
+		  await vscode.commands.executeCommand(
+			"workbench.view.extension.dappforge-sidebar-view"
+		  );
+		})
+	  );
+		
 	context.subscriptions.push(
 		vscode.commands.registerCommand("dappforge.helloWorld", () => {
 		  //vscode.window.showInformationMessage(

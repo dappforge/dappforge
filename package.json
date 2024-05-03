@@ -36,6 +36,11 @@
       {
         "command": "dappforge.helloWorld",
         "title": "Hello World"
+      },
+      {
+        "command": "dappforge.refresh",
+        "category": "dappforge",
+        "title": "Refresh"
       }
     ]
   },
