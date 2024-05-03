@@ -2,15 +2,25 @@
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
 import { HelloWorldPanel } from './HelloWorldPanel';
+import { SidebarProvider } from './SidebarProvider';
 
 // This method is called when your extension is activated
 // Your extension is activated the very first time the command is executed
 export function activate(context: vscode.ExtensionContext) {
 
-	// Use the console to output diagnostic information (console.log) and errors (console.error)
-	// This line of code will only be executed once when your extension is activated
-	console.log('Congratulations, your extension "dappforge" is now active!');
+	const sidebarProvider = new SidebarProvider(context.extensionUri);
 
+	const item = vscode.window.createStatusBarItem(
+		vscode.StatusBarAlignment.Right
+	  );
+	  item.text = "$(beaker) Add Todo";
+	  //item.command = "vstodo.addTodo";
+	  item.show();
+	
+	context.subscriptions.push(
+		vscode.window.registerWebviewViewProvider("dappforge-sidebar", sidebarProvider)
+	);
+	
 	context.subscriptions.push(
 		vscode.commands.registerCommand("dappforge.helloWorld", () => {
 		  //vscode.window.showInformationMessage(

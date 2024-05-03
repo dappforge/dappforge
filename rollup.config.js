@@ -1,4 +1,5 @@
 import svelte from "rollup-plugin-svelte";
+import css from "rollup-plugin-css-only";
 import resolve from "@rollup/plugin-node-resolve";
 import commonjs from "@rollup/plugin-commonjs";
 import { terser } from "rollup-plugin-terser";
@@ -30,6 +31,7 @@ export default fs
           emitCss: true,
           preprocess: sveltePreprocess(),
         }),
+        css({ output: input.split(".")[0] + ".css" }),
 
         // If you have external dependencies installed from
         // npm, you'll most likely need these plugins. In
