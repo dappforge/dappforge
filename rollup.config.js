@@ -14,7 +14,7 @@ export default fs
   .map((input) => {
     const name = input.split(".")[0];
     return {
-      input: "webviews/pages/" + input,
+      input: "src/webviews/pages/" + input,
       output: {
         sourcemap: true,
         format: "iife",
