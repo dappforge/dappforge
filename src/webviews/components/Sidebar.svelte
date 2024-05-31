@@ -1,25 +1,62 @@
 <script lang="ts">
-  let questions: Array<string> = [];
-  let question: string = "";
+  import { onMount } from "svelte";
+  import type { User } from "../types";
+
+  let loading = true;
+  let user: User | null = null;
+  let vscode = tsvscode;
+
+  onMount(async () => {
+    window.addEventListener("message", async (event) => {
+      const message = event.data;
+      switch (message.type) {
+        case "token":
+          const tokens = JSON.parse(message.value);
+          if (tokens.userId && tokens.userId !== "") {
+            const response = await fetch(
+              `${apiBaseUrl}/user/${tokens.userId}`,
+              {
+                headers: {
+                  authorization: `Basic ${tokens.basicAuthToken}`,
+                },
+              }
+            );
+            console.log(`user: ${response.body}`);
+            const data = await response.json();
+            user = data;
+          }
+          loading = false;
+      }
+    });
+
+    tsvscode.postMessage({ type: "get-token", value: undefined });
+  });
 </script>
 
 <h1>dAppForge</h1>
 
-<form
-  on:submit|preventDefault={() => {
-    questions = [...questions, question];
-    question = "";
-  }}
->
-  <input type="text" bind:value={question} placeholder="Ask a question" />
-  <button type="submit">Ask</button>
-</form>
-
-<ul>
-  {#each questions as question}
-    <li>{question}</li>
-  {/each}
-</ul>
+{#if loading}
+  <div>loading...</div>
+{:else if user}
+  <div class="name">
+    {user.name}
+  </div>
+  <div class="token-count">
+    Tokens: {user.tokenCount}
+  </div>
+  <button
+    on:click={() => {
+      user = null;
+      vscode.postMessage({ type: "logout", value: undefined });
+    }}>logout</button
+  >
+{:else}
+  <button
+    on:click={() => {
+      vscode.postMessage({ type: "authenticate", value: undefined });
+    }}>login with GitHub</button
+  >
+{/if}
 
 <style>
   h1 {

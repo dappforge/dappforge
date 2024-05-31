@@ -3,7 +3,7 @@
 import * as vscode from 'vscode';
 import { SidebarProvider } from './SidebarProvider';
 import { authenticate } from './authenticate';
-import { TokenManager } from './TokenManager';
+import { TokenManager, USER_ID_KEY } from './TokenManager';
 
 // This method is called when your extension is activated
 // Your extension is activated the very first time the command is executed
@@ -13,6 +13,11 @@ export function activate(context: vscode.ExtensionContext) {
 	console.log(`Current environment: ${environment}`);
 
 	TokenManager.globalState = context.globalState;
+	TokenManager.setBasicAuthToken();
+	if (!TokenManager.getToken(USER_ID_KEY) || TokenManager.getToken(USER_ID_KEY) === "") {
+		TokenManager.resetTokens();
+	}
+	console.log(`Current tokens: ${TokenManager.getTokensAsJsonString()}`);
 
 	const sidebarProvider = new SidebarProvider(context.extensionUri, environment);
 

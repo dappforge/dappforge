@@ -1,8 +1,8 @@
 import * as vscode from "vscode";
-//import { authenticate } from "./authenticate";
+import { authenticate } from "./authenticate";
 import { getApiBaseUrl } from "./constants";
 import { getNonce } from "./getNonce";
-//import { TokenManager } from "./TokenManager";
+import { TokenManager } from "./TokenManager";
 
 export class SidebarProvider implements vscode.WebviewViewProvider {
   _view?: vscode.WebviewView;
@@ -27,27 +27,23 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
     webviewView.webview.onDidReceiveMessage(async (data) => {
       switch (data.type) {
         case "logout": {
-          //TokenManager.setToken("");
+          TokenManager.resetTokens();
           break;
         }
         case "authenticate": {
-          /*
-          authenticate(() => {
+          authenticate(this._environment, () => {
             webviewView.webview.postMessage({
               type: "token",
-              value: TokenManager.getToken(),
+              value: TokenManager.getTokensAsJsonString()
             });
           });
-          */
           break;
         }
         case "get-token": {
-          /*
           webviewView.webview.postMessage({
             type: "token",
-            value: TokenManager.getToken(),
+            value: TokenManager.getTokensAsJsonString()
           });
-          */
           break;
         }
         case "onInfo": {
@@ -108,6 +104,7 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
         <script nonce="${nonce}">
           const tsvscode = acquireVsCodeApi();
           const apiBaseUrl = ${JSON.stringify(getApiBaseUrl(this._environment))}
+          const environment = ${JSON.stringify(this._environment)}
         </script>
 			</head>
       <body>

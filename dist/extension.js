@@ -33,9 +33,9 @@ exports.deactivate = exports.activate = void 0;
 // The module 'vscode' contains the VS Code extensibility API
 // Import the module and reference it with the alias vscode in your code below
 const vscode = __importStar(__webpack_require__(1));
-const SidebarProvider_1 = __webpack_require__(4);
-const authenticate_1 = __webpack_require__(2);
-const TokenManager_1 = __webpack_require__(13);
+const SidebarProvider_1 = __webpack_require__(2);
+const authenticate_1 = __webpack_require__(3);
+const TokenManager_1 = __webpack_require__(12);
 // This method is called when your extension is activated
 // Your extension is activated the very first time the command is executed
 function activate(context) {
@@ -43,6 +43,11 @@ function activate(context) {
     const environment = config.get('environment', 'dev');
     console.log(`Current environment: ${environment}`);
     TokenManager_1.TokenManager.globalState = context.globalState;
+    TokenManager_1.TokenManager.setBasicAuthToken();
+    if (!TokenManager_1.TokenManager.getToken(TokenManager_1.USER_ID_KEY) || TokenManager_1.TokenManager.getToken(TokenManager_1.USER_ID_KEY) === "") {
+        TokenManager_1.TokenManager.resetTokens();
+    }
+    console.log(`Current tokens: ${TokenManager_1.TokenManager.getTokensAsJsonString()}`);
     const sidebarProvider = new SidebarProvider_1.SidebarProvider(context.extensionUri, environment);
     const item = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right);
     item.text = "$(beaker) Add Todo";
@@ -104,101 +109,13 @@ var __importStar = (this && this.__importStar) || function (mod) {
     __setModuleDefault(result, mod);
     return result;
 };
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.authenticate = void 0;
-const vscode = __importStar(__webpack_require__(1));
-const constants_1 = __webpack_require__(5);
-const polka_1 = __importDefault(__webpack_require__(6));
-const TokenManager_1 = __webpack_require__(13);
-const authenticate = async (environment, fn) => {
-    const apiBaseUrl = (0, constants_1.getApiBaseUrl)(environment);
-    console.log(`Authenticate environment: ${environment} url: ${apiBaseUrl}`);
-    vscode.commands.executeCommand("vscode.open", vscode.Uri.parse(apiBaseUrl + "/auth/github"));
-    const app = (0, polka_1.default)();
-    app.get(`/auth/:accessToken/:refreshToken`, async (req, res) => {
-        const { accessToken, refreshToken } = req.params;
-        if (!accessToken || !refreshToken) {
-            res.end(`<h1>Failed to authenticate, something went wrong</h1>`);
-            return;
-        }
-        await TokenManager_1.TokenManager.setToken(TokenManager_1.ACCESS_TOKEN_KEY, accessToken);
-        await TokenManager_1.TokenManager.setToken(TokenManager_1.REFRESH_TOKEN_KEY, refreshToken);
-        if (fn) {
-            fn();
-        }
-        res.end(`<h1>dAppForge authentication was successful, you can close this now</h1>`);
-        app.server.close();
-    });
-    app.listen(constants_1.SERVER_PORT, (err) => {
-        if (err) {
-            vscode.window.showErrorMessage(err.message);
-        }
-        else {
-            vscode.commands.executeCommand("vscode.open", vscode.Uri.parse(`${apiBaseUrl}/auth/github`));
-        }
-    });
-};
-exports.authenticate = authenticate;
-
-
-/***/ }),
-/* 3 */
-/***/ ((__unused_webpack_module, exports) => {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.getNonce = void 0;
-function getNonce() {
-    let text = "";
-    const possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-    for (let i = 0; i < 32; i++) {
-        text += possible.charAt(Math.floor(Math.random() * possible.length));
-    }
-    return text;
-}
-exports.getNonce = getNonce;
-
-
-/***/ }),
-/* 4 */
-/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
-
-"use strict";
-
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || function (mod) {
-    if (mod && mod.__esModule) return mod;
-    var result = {};
-    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
-    __setModuleDefault(result, mod);
-    return result;
-};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.SidebarProvider = void 0;
 const vscode = __importStar(__webpack_require__(1));
-//import { authenticate } from "./authenticate";
-const constants_1 = __webpack_require__(5);
-const getNonce_1 = __webpack_require__(3);
-//import { TokenManager } from "./TokenManager";
+const authenticate_1 = __webpack_require__(3);
+const constants_1 = __webpack_require__(4);
+const getNonce_1 = __webpack_require__(14);
+const TokenManager_1 = __webpack_require__(12);
 class SidebarProvider {
     _extensionUri;
     _environment;
@@ -219,27 +136,23 @@ class SidebarProvider {
         webviewView.webview.onDidReceiveMessage(async (data) => {
             switch (data.type) {
                 case "logout": {
-                    //TokenManager.setToken("");
+                    TokenManager_1.TokenManager.resetTokens();
                     break;
                 }
                 case "authenticate": {
-                    /*
-                    authenticate(() => {
-                      webviewView.webview.postMessage({
-                        type: "token",
-                        value: TokenManager.getToken(),
-                      });
+                    (0, authenticate_1.authenticate)(this._environment, () => {
+                        webviewView.webview.postMessage({
+                            type: "token",
+                            value: TokenManager_1.TokenManager.getTokensAsJsonString()
+                        });
                     });
-                    */
                     break;
                 }
                 case "get-token": {
-                    /*
                     webviewView.webview.postMessage({
-                      type: "token",
-                      value: TokenManager.getToken(),
+                        type: "token",
+                        value: TokenManager_1.TokenManager.getTokensAsJsonString()
                     });
-                    */
                     break;
                 }
                 case "onInfo": {
@@ -285,6 +198,7 @@ class SidebarProvider {
         <script nonce="${nonce}">
           const tsvscode = acquireVsCodeApi();
           const apiBaseUrl = ${JSON.stringify((0, constants_1.getApiBaseUrl)(this._environment))}
+          const environment = ${JSON.stringify(this._environment)}
         </script>
 			</head>
       <body>
@@ -297,7 +211,75 @@ exports.SidebarProvider = SidebarProvider;
 
 
 /***/ }),
-/* 5 */
+/* 3 */
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.authenticate = void 0;
+const vscode = __importStar(__webpack_require__(1));
+const constants_1 = __webpack_require__(4);
+const polka_1 = __importDefault(__webpack_require__(5));
+const TokenManager_1 = __webpack_require__(12);
+const authenticate = async (environment, fn) => {
+    const apiBaseUrl = (0, constants_1.getApiBaseUrl)(environment);
+    console.log(`Authenticate environment: ${environment} url: ${apiBaseUrl}`);
+    vscode.commands.executeCommand("vscode.open", vscode.Uri.parse(apiBaseUrl + "/auth/github"));
+    const app = (0, polka_1.default)();
+    app.get(`/auth/:id/:accessToken/:refreshToken`, async (req, res) => {
+        const { id, accessToken, refreshToken } = req.params;
+        if (!accessToken || !refreshToken) {
+            res.end(`<h1>Failed to authenticate, something went wrong</h1>`);
+            return;
+        }
+        await TokenManager_1.TokenManager.setTokens(id, accessToken, refreshToken);
+        if (fn) {
+            fn();
+        }
+        res.end(`<h1>dAppForge authentication was successful, you can close this now</h1>`);
+        app.server.close();
+    });
+    app.listen(constants_1.SERVER_PORT, (err) => {
+        if (err) {
+            vscode.window.showErrorMessage(err.message);
+        }
+        else {
+            vscode.commands.executeCommand("vscode.open", vscode.Uri.parse(`${apiBaseUrl}/auth/github`));
+        }
+    });
+};
+exports.authenticate = authenticate;
+
+
+/***/ }),
+/* 4 */
 /***/ ((__unused_webpack_module, exports) => {
 
 "use strict";
@@ -314,13 +296,13 @@ exports.SERVER_PORT = 54021;
 
 
 /***/ }),
-/* 6 */
+/* 5 */
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
-const http = __webpack_require__(7);
-const Router = __webpack_require__(8);
-const { parse } = __webpack_require__(11);
-const parser = __webpack_require__(12);
+const http = __webpack_require__(6);
+const Router = __webpack_require__(7);
+const { parse } = __webpack_require__(10);
+const parser = __webpack_require__(11);
 
 function lead(x) {
 	return x.charCodeAt(0) === 47 ? x : ('/' + x);
@@ -422,17 +404,17 @@ module.exports = opts => new Polka(opts);
 
 
 /***/ }),
-/* 7 */
+/* 6 */
 /***/ ((module) => {
 
 "use strict";
 module.exports = require("http");
 
 /***/ }),
-/* 8 */
+/* 7 */
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
-const { exec, match, parse } = __webpack_require__(9);
+const { exec, match, parse } = __webpack_require__(8);
 
 class Trouter {
 	constructor(opts) {
@@ -480,7 +462,7 @@ module.exports = Trouter;
 
 
 /***/ }),
-/* 9 */
+/* 8 */
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
 "use strict";
@@ -490,7 +472,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   match: () => (/* binding */ match),
 /* harmony export */   parse: () => (/* binding */ parse)
 /* harmony export */ });
-/* harmony import */ var _arr_every__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(10);
+/* harmony import */ var _arr_every__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(9);
 
 
 
@@ -609,7 +591,7 @@ function exec(str, arr) {
 
 
 /***/ }),
-/* 10 */
+/* 9 */
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 "use strict";
@@ -631,14 +613,14 @@ __webpack_require__.r(__webpack_exports__);
 
 
 /***/ }),
-/* 11 */
+/* 10 */
 /***/ ((module) => {
 
 "use strict";
 module.exports = require("querystring");
 
 /***/ }),
-/* 12 */
+/* 11 */
 /***/ ((module) => {
 
 module.exports = function (req) {
@@ -666,25 +648,84 @@ module.exports = function (req) {
 
 
 /***/ }),
-/* 13 */
-/***/ ((__unused_webpack_module, exports) => {
+/* 12 */
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.TokenManager = exports.REFRESH_TOKEN_KEY = exports.ACCESS_TOKEN_KEY = void 0;
+exports.TokenManager = exports.BASIC_AUTH_TOKEN = exports.USER_ID_KEY = exports.REFRESH_TOKEN_KEY = exports.ACCESS_TOKEN_KEY = void 0;
+const utils_1 = __webpack_require__(13);
 exports.ACCESS_TOKEN_KEY = "dappforgeaccesstoken";
 exports.REFRESH_TOKEN_KEY = "dappforgerefreshtoken";
+exports.USER_ID_KEY = "dappforgeuserid";
+exports.BASIC_AUTH_TOKEN = "dappforgebasicauth";
 class TokenManager {
     static globalState;
+    static setBasicAuthToken() {
+        this.setToken(exports.BASIC_AUTH_TOKEN, (0, utils_1.getBasicAuthToken)());
+    }
     static setToken(key, token) {
         return this.globalState.update(key, token);
     }
     static getToken(key) {
         return this.globalState.get(key);
     }
+    static getTokensAsJsonString() {
+        return JSON.stringify({
+            basicAuthToken: TokenManager.getToken(exports.BASIC_AUTH_TOKEN),
+            userId: TokenManager.getToken(exports.USER_ID_KEY),
+            accessToken: TokenManager.getToken(exports.ACCESS_TOKEN_KEY),
+            refreshToken: TokenManager.getToken(exports.REFRESH_TOKEN_KEY)
+        });
+    }
+    static setTokens(id, accessToken, refreshToken) {
+        this.setToken(exports.USER_ID_KEY, id);
+        this.setToken(exports.ACCESS_TOKEN_KEY, accessToken);
+        this.setToken(exports.REFRESH_TOKEN_KEY, refreshToken);
+    }
+    static resetTokens() {
+        this.setToken(exports.USER_ID_KEY, "");
+        this.setToken(exports.ACCESS_TOKEN_KEY, "");
+        this.setToken(exports.REFRESH_TOKEN_KEY, "");
+    }
 }
 exports.TokenManager = TokenManager;
+
+
+/***/ }),
+/* 13 */
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.getBasicAuthToken = exports.PASSWORD = exports.USERNAME = void 0;
+exports.USERNAME = "dappforge-api-user";
+exports.PASSWORD = "d8pp4ge-8pi-p8ssan-AI_app?thatwillanswerQuestions";
+function getBasicAuthToken() {
+    return Buffer.from(exports.USERNAME + ":" + exports.PASSWORD).toString('base64');
+}
+exports.getBasicAuthToken = getBasicAuthToken;
+
+
+/***/ }),
+/* 14 */
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.getNonce = void 0;
+function getNonce() {
+    let text = "";
+    const possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    for (let i = 0; i < 32; i++) {
+        text += possible.charAt(Math.floor(Math.random() * possible.length));
+    }
+    return text;
+}
+exports.getNonce = getNonce;
 
 
 /***/ })

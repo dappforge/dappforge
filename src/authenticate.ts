@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { getApiBaseUrl, SERVER_PORT } from './constants';
 import polka from "polka";
-import { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY, TokenManager } from './TokenManager';
+import { TokenManager } from './TokenManager';
 
 
 export const authenticate = async (environment: string, fn?: () => void) => {
@@ -10,14 +10,13 @@ export const authenticate = async (environment: string, fn?: () => void) => {
     vscode.commands.executeCommand("vscode.open", vscode.Uri.parse(apiBaseUrl + "/auth/github"));
     const app = polka();
 
-    app.get(`/auth/:accessToken/:refreshToken`, async (req, res) => {
-        const { accessToken, refreshToken } = req.params;
+    app.get(`/auth/:id/:accessToken/:refreshToken`, async (req, res) => {
+        const { id, accessToken, refreshToken } = req.params;
         if (!accessToken || !refreshToken) {
             res.end(`<h1>Failed to authenticate, something went wrong</h1>`);
             return;
         }
-        await TokenManager.setToken(ACCESS_TOKEN_KEY, accessToken);
-        await TokenManager.setToken(REFRESH_TOKEN_KEY, refreshToken);
+        await TokenManager.setTokens(id, accessToken, refreshToken);
         if (fn) { fn(); }
   
         res.end(`<h1>dAppForge authentication was successful, you can close this now</h1>`);
