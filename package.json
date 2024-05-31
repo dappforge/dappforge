@@ -9,7 +9,8 @@
   "categories": [
     "Other"
   ],
-  "activationEvents": [],
+  "activationEvents": [
+  ],
   "main": "./dist/extension.js",
   "contributes": {
     "configuration": {
@@ -44,13 +45,14 @@
     },
     "commands": [
       {
-        "command": "dappforge.helloWorld",
-        "title": "Hello World"
+        "command": "dappforge.refresh",
+        "category": "dAppForge",
+        "title": "Refresh"
       },
       {
-        "command": "dappforge.refresh",
-        "category": "dappforge",
-        "title": "Refresh"
+        "command": "dappforge.authenticate",
+        "category": "dAppForge",
+        "title": "Authenticate"
       }
     ]
   },

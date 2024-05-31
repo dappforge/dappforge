@@ -1,5 +1,5 @@
 export function getApiBaseUrl(environment: string): string {
-    return environment === 'production'
+    return environment === 'dev'
       ? "http://127.0.0.1:44151"
       : "https://api.dappforge.com";
   }
