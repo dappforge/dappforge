@@ -38,7 +38,10 @@ const SidebarProvider_1 = __webpack_require__(4);
 // This method is called when your extension is activated
 // Your extension is activated the very first time the command is executed
 function activate(context) {
-    const sidebarProvider = new SidebarProvider_1.SidebarProvider(context.extensionUri);
+    const config = vscode.workspace.getConfiguration('dAppForge');
+    const environment = config.get('environment', 'dev');
+    console.log(`Current environment: ${environment}`);
+    const sidebarProvider = new SidebarProvider_1.SidebarProvider(context.extensionUri, environment);
     const item = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right);
     item.text = "$(beaker) Add Todo";
     //item.command = "vstodo.addTodo";
@@ -288,10 +291,12 @@ const getNonce_1 = __webpack_require__(3);
 //import { TokenManager } from "./TokenManager";
 class SidebarProvider {
     _extensionUri;
+    _environment;
     _view;
     _doc;
-    constructor(_extensionUri) {
+    constructor(_extensionUri, _environment) {
         this._extensionUri = _extensionUri;
+        this._environment = _environment;
     }
     resolveWebviewView(webviewView) {
         this._view = webviewView;
@@ -369,7 +374,7 @@ class SidebarProvider {
         <link href="${styleMainUri}" rel="stylesheet">
         <script nonce="${nonce}">
           const tsvscode = acquireVsCodeApi();
-          const apiBaseUrl = ${JSON.stringify(constants_1.apiBaseUrl)}
+          const apiBaseUrl = ${JSON.stringify((0, constants_1.getApiBaseUrl)(this._environment))}
         </script>
 			</head>
       <body>
@@ -387,8 +392,13 @@ exports.SidebarProvider = SidebarProvider;
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.apiBaseUrl = void 0;
-exports.apiBaseUrl = "http://localhost:3002";
+exports.getApiBaseUrl = void 0;
+function getApiBaseUrl(environment) {
+    return environment === 'production'
+        ? "http://127.0.0.1:44151"
+        : "https://api.dappforge.com";
+}
+exports.getApiBaseUrl = getApiBaseUrl;
 
 
 /***/ })

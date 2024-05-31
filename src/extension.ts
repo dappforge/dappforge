@@ -7,8 +7,11 @@ import { SidebarProvider } from './SidebarProvider';
 // This method is called when your extension is activated
 // Your extension is activated the very first time the command is executed
 export function activate(context: vscode.ExtensionContext) {
+	const config = vscode.workspace.getConfiguration('dAppForge');
+	const environment = config.get<string>('environment', 'dev');
+	console.log(`Current environment: ${environment}`);
 
-	const sidebarProvider = new SidebarProvider(context.extensionUri);
+	const sidebarProvider = new SidebarProvider(context.extensionUri, environment);
 
 	const item = vscode.window.createStatusBarItem(
 		vscode.StatusBarAlignment.Right

@@ -12,12 +12,22 @@
   "activationEvents": [],
   "main": "./dist/extension.js",
   "contributes": {
+    "configuration": {
+      "properties": {
+        "dAppForge.environment": {
+          "type": "string",
+          "default": "dev",
+          "enum": ["dev", "staging", "prod"],
+          "description": "The current environment for the extension."
+        }
+      }
+    },
     "viewsContainers": {
       "activitybar": [
         {
           "id": "dappforge-sidebar-view",
           "title": "dAppForge",
-          "icon": "media/checklist.svg"
+          "icon": "media/dAppForge-mark.svg"
         }
       ]
     },
@@ -27,7 +37,7 @@
           "type": "webview",
           "id": "dappforge-sidebar",
           "name": "dAppForge",
-          "icon": "media/checklist.svg",
+          "icon": "media/dAppForge-mark.svg",
           "contextualTitle": "dAppForge"
         }
       ]

@@ -3,7 +3,7 @@
   let question: string = "";
 </script>
 
-<h1>dAppForge Chat</h1>
+<h1>dAppForge</h1>
 
 <form
   on:submit|preventDefault={() => {
@@ -28,5 +28,6 @@
     margin: 0;
     padding: 1rem;
     background-color: #333;
+    text-align: center;
   }
 </style>

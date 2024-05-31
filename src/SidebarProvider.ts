@@ -1,6 +1,6 @@
 import * as vscode from "vscode";
 //import { authenticate } from "./authenticate";
-import { apiBaseUrl } from "./constants";
+import { getApiBaseUrl } from "./constants";
 import { getNonce } from "./getNonce";
 //import { TokenManager } from "./TokenManager";
 
@@ -8,7 +8,9 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
   _view?: vscode.WebviewView;
   _doc?: vscode.TextDocument;
 
-  constructor(private readonly _extensionUri: vscode.Uri) {}
+  constructor(private readonly _extensionUri: vscode.Uri,
+    private readonly _environment: string
+  ) {}
 
   public resolveWebviewView(webviewView: vscode.WebviewView) {
     this._view = webviewView;
@@ -105,7 +107,7 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
         <link href="${styleMainUri}" rel="stylesheet">
         <script nonce="${nonce}">
           const tsvscode = acquireVsCodeApi();
-          const apiBaseUrl = ${JSON.stringify(apiBaseUrl)}
+          const apiBaseUrl = ${JSON.stringify(getApiBaseUrl(this._environment))}
         </script>
 			</head>
       <body>
