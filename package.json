@@ -9,8 +9,7 @@
   "categories": [
     "Other"
   ],
-  "activationEvents": [
-  ],
+  "activationEvents": [],
   "main": "./dist/extension.js",
   "contributes": {
     "configuration": {
@@ -18,7 +17,11 @@
         "dAppForge.environment": {
           "type": "string",
           "default": "dev",
-          "enum": ["dev", "staging", "prod"],
+          "enum": [
+            "dev",
+            "staging",
+            "prod"
+          ],
           "description": "The current environment for the extension."
         }
       }

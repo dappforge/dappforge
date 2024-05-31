@@ -3,3 +3,5 @@ export function getApiBaseUrl(environment: string): string {
       ? "http://127.0.0.1:44151"
       : "https://api.dappforge.com";
   }
+
+export const SERVER_PORT = 54021;
