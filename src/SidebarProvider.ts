@@ -1,5 +1,5 @@
 import * as vscode from "vscode";
-import { authenticate } from "./authenticate";
+import { authenticate } from "./modules/authenticate";
 import { getApiBaseUrl } from "./constants";
 import { getNonce } from "./getNonce";
 import { TokenManager } from "./TokenManager";
@@ -28,6 +28,7 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
       switch (data.type) {
         case "logout": {
           TokenManager.resetTokens();
+          vscode.commands.executeCommand('dappforge.pause');
           break;
         }
         case "authenticate": {
@@ -37,6 +38,15 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
               value: TokenManager.getTokensAsJsonString()
             });
           });
+          break;
+        }
+        case "logged-in-out": {
+          console.log(`logged-in-out: ${data.value}`);
+          if (!data.value) {
+            vscode.commands.executeCommand('dappforge.pause');
+          } else {
+            vscode.commands.executeCommand('dappforge.resume');
+          }
           break;
         }
         case "get-token": {

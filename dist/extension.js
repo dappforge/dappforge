@@ -36,23 +36,30 @@ const vscode = __importStar(__webpack_require__(1));
 const SidebarProvider_1 = __webpack_require__(2);
 const authenticate_1 = __webpack_require__(3);
 const TokenManager_1 = __webpack_require__(12);
+const provider_1 = __webpack_require__(15);
+const log_1 = __webpack_require__(16);
 // This method is called when your extension is activated
 // Your extension is activated the very first time the command is executed
 function activate(context) {
+    // Create logger
+    (0, log_1.registerLogger)(vscode.window.createOutputChannel('dAppForge', { log: true }));
+    (0, log_1.info)('dAppForge is activated.');
     const config = vscode.workspace.getConfiguration('dAppForge');
     const environment = config.get('environment', 'dev');
     console.log(`Current environment: ${environment}`);
     TokenManager_1.TokenManager.globalState = context.globalState;
     TokenManager_1.TokenManager.setBasicAuthToken();
-    if (!TokenManager_1.TokenManager.getToken(TokenManager_1.USER_ID_KEY) || TokenManager_1.TokenManager.getToken(TokenManager_1.USER_ID_KEY) === "") {
+    if (!TokenManager_1.TokenManager.loggedIn()) {
         TokenManager_1.TokenManager.resetTokens();
     }
     console.log(`Current tokens: ${TokenManager_1.TokenManager.getTokensAsJsonString()}`);
     const sidebarProvider = new SidebarProvider_1.SidebarProvider(context.extensionUri, environment);
-    const item = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right);
-    item.text = "$(beaker) Add Todo";
+    //const item = vscode.window.createStatusBarItem(
+    //		vscode.StatusBarAlignment.Right
+    //  	);
+    //item.text = "$(beaker) Add Todo";
     //item.command = "vstodo.addTodo";
-    item.show();
+    //item.show();
     context.subscriptions.push(vscode.window.registerWebviewViewProvider("dappforge-sidebar", sidebarProvider));
     context.subscriptions.push(vscode.commands.registerCommand("dappforge.authenticate", () => {
         try {
@@ -65,6 +72,28 @@ function activate(context) {
     context.subscriptions.push(vscode.commands.registerCommand("dappforge.refresh", async () => {
         await vscode.commands.executeCommand("workbench.action.closeSidebar");
         await vscode.commands.executeCommand("workbench.view.extension.dappforge-sidebar-view");
+    }));
+    // Create status bar
+    context.subscriptions.push(vscode.commands.registerCommand('dappforge.openSettings', () => {
+        vscode.commands.executeCommand('workbench.action.openSettings', '@ext:dappforge.dappforge');
+    }));
+    let statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
+    statusBarItem.command = 'dappforge.toggle';
+    statusBarItem.text = `$(chip) dAppForge`;
+    statusBarItem.show();
+    context.subscriptions.push(statusBarItem);
+    // Create provider
+    const provider = new provider_1.PromptProvider(statusBarItem, context);
+    let disposable = vscode.languages.registerInlineCompletionItemProvider({ pattern: '**', }, provider);
+    context.subscriptions.push(disposable);
+    context.subscriptions.push(vscode.commands.registerCommand('dappforge.pause', () => {
+        provider.paused = true;
+    }));
+    context.subscriptions.push(vscode.commands.registerCommand('dappforge.resume', () => {
+        provider.paused = false;
+    }));
+    context.subscriptions.push(vscode.commands.registerCommand('dappforge.toggle', () => {
+        provider.paused = !provider.paused;
     }));
 }
 exports.activate = activate;
@@ -137,6 +166,7 @@ class SidebarProvider {
             switch (data.type) {
                 case "logout": {
                     TokenManager_1.TokenManager.resetTokens();
+                    vscode.commands.executeCommand('dappforge.pause');
                     break;
                 }
                 case "authenticate": {
@@ -146,6 +176,16 @@ class SidebarProvider {
                             value: TokenManager_1.TokenManager.getTokensAsJsonString()
                         });
                     });
+                    break;
+                }
+                case "logged-in-out": {
+                    console.log(`logged-in-out: ${data.value}`);
+                    if (!data.value) {
+                        vscode.commands.executeCommand('dappforge.pause');
+                    }
+                    else {
+                        vscode.commands.executeCommand('dappforge.resume');
+                    }
                     break;
                 }
                 case "get-token": {
@@ -689,6 +729,9 @@ class TokenManager {
         this.setToken(exports.ACCESS_TOKEN_KEY, "");
         this.setToken(exports.REFRESH_TOKEN_KEY, "");
     }
+    static loggedIn() {
+        return (TokenManager.getToken(exports.USER_ID_KEY) && TokenManager.getToken(exports.USER_ID_KEY) !== "") ? true : false;
+    }
 }
 exports.TokenManager = TokenManager;
 
@@ -726,6 +769,1094 @@ function getNonce() {
     return text;
 }
 exports.getNonce = getNonce;
+
+
+/***/ }),
+/* 15 */
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+"use strict";
+
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.PromptProvider = void 0;
+const vscode_1 = __importDefault(__webpack_require__(1));
+const log_1 = __webpack_require__(16);
+const autocomplete_1 = __webpack_require__(17);
+const preparePrompt_1 = __webpack_require__(22);
+const lock_1 = __webpack_require__(29);
+const promptCache_1 = __webpack_require__(30);
+const filter_1 = __webpack_require__(31);
+const ollamaCheckModel_1 = __webpack_require__(32);
+const ollamaDownloadModel_1 = __webpack_require__(33);
+const config_1 = __webpack_require__(28);
+const TokenManager_1 = __webpack_require__(12);
+class PromptProvider {
+    lock = new lock_1.AsyncLock();
+    statusbar;
+    context;
+    _paused = false;
+    _status = { icon: "chip", text: "dAppForge" };
+    constructor(statusbar, context) {
+        this.statusbar = statusbar;
+        this.context = context;
+        this._paused = !TokenManager_1.TokenManager.loggedIn();
+    }
+    set paused(value) {
+        if (!TokenManager_1.TokenManager.loggedIn()) {
+            this._paused = true;
+        }
+        else {
+            this._paused = value;
+        }
+        this.update();
+    }
+    get paused() {
+        return this._paused;
+    }
+    update(icon, text) {
+        this._status.icon = icon ? icon : this._status.icon;
+        this._status.text = text ? text : this._status.text;
+        let statusText = '';
+        let statusTooltip = '';
+        if (this._paused) {
+            statusText = `$(sync-ignored) ${this._status.text}`;
+            statusTooltip = `${this._status.text} (Paused)`;
+        }
+        else {
+            statusText = `$(${this._status.icon}) ${this._status.text}`;
+            statusTooltip = `${this._status.text}`;
+        }
+        this.statusbar.text = statusText;
+        this.statusbar.tooltip = statusTooltip;
+    }
+    async delayCompletion(delay, token) {
+        if (config_1.config.inference.delay < 0) {
+            return false;
+        }
+        await new Promise(p => setTimeout(p, delay));
+        if (token.isCancellationRequested) {
+            return false;
+        }
+        return true;
+    }
+    async provideInlineCompletionItems(document, position, context, token) {
+        if (!await this.delayCompletion(config_1.config.inference.delay, token)) {
+            return;
+        }
+        try {
+            if (this.paused) {
+                return;
+            }
+            // Ignore unsupported documents
+            if (!(0, filter_1.isSupported)(document)) {
+                (0, log_1.info)(`Unsupported document: ${document.uri.toString()} ignored.`);
+                return;
+            }
+            // Ignore if not needed
+            if ((0, filter_1.isNotNeeded)(document, position, context)) {
+                (0, log_1.info)('No inline completion required');
+                return;
+            }
+            // Ignore if already canceled
+            if (token.isCancellationRequested) {
+                (0, log_1.info)(`Canceled before AI completion.`);
+                return;
+            }
+            // Execute in lock
+            return await this.lock.inLock(async () => {
+                // Prepare context
+                let prepared = await (0, preparePrompt_1.preparePrompt)(document, position, context);
+                if (token.isCancellationRequested) {
+                    (0, log_1.info)(`Canceled before AI completion.`);
+                    return;
+                }
+                // Result
+                let res = null;
+                // Check if in cache
+                let cached = (0, promptCache_1.getFromPromptCache)({
+                    prefix: prepared.prefix,
+                    suffix: prepared.suffix
+                });
+                // If not cached
+                if (cached === undefined) {
+                    // Config
+                    let inferenceConfig = config_1.config.inference;
+                    // Update status
+                    this.update('sync~spin', 'Llama Coder');
+                    try {
+                        // Check model exists
+                        let modelExists = await (0, ollamaCheckModel_1.ollamaCheckModel)(inferenceConfig.endpoint, inferenceConfig.modelName, inferenceConfig.bearerToken);
+                        if (token.isCancellationRequested) {
+                            (0, log_1.info)(`Canceled after AI completion.`);
+                            return;
+                        }
+                        // Download model if not exists
+                        if (!modelExists) {
+                            // Check if user asked to ignore download
+                            if (this.context.globalState.get('llama-coder-download-ignored') === inferenceConfig.modelName) {
+                                (0, log_1.info)(`Ingoring since user asked to ignore download.`);
+                                return;
+                            }
+                            // Ask for download
+                            let download = await vscode_1.default.window.showInformationMessage(`Model ${inferenceConfig.modelName} is not downloaded. Do you want to download it? Answering "No" would require you to manually download model.`, 'Yes', 'No');
+                            if (download === 'No') {
+                                (0, log_1.info)(`Ingoring since user asked to ignore download.`);
+                                this.context.globalState.update('llama-coder-download-ignored', inferenceConfig.modelName);
+                                return;
+                            }
+                            // Perform download
+                            this.update('sync~spin', 'Downloading');
+                            await (0, ollamaDownloadModel_1.ollamaDownloadModel)(inferenceConfig.endpoint, inferenceConfig.modelName, inferenceConfig.bearerToken);
+                            this.update('sync~spin', 'Llama Coder');
+                        }
+                        if (token.isCancellationRequested) {
+                            (0, log_1.info)(`Canceled after AI completion.`);
+                            return;
+                        }
+                        // Run AI completion
+                        (0, log_1.info)(`Running AI completion...`);
+                        res = await (0, autocomplete_1.autocomplete)({
+                            prefix: prepared.prefix,
+                            suffix: prepared.suffix,
+                            endpoint: inferenceConfig.endpoint,
+                            bearerToken: inferenceConfig.bearerToken,
+                            model: inferenceConfig.modelName,
+                            format: inferenceConfig.modelFormat,
+                            maxLines: inferenceConfig.maxLines,
+                            maxTokens: inferenceConfig.maxTokens,
+                            temperature: inferenceConfig.temperature,
+                            canceled: () => token.isCancellationRequested,
+                        });
+                        (0, log_1.info)(`AI completion completed: ${res}`);
+                        // Put to cache
+                        (0, promptCache_1.setPromptToCache)({
+                            prefix: prepared.prefix,
+                            suffix: prepared.suffix,
+                            value: res
+                        });
+                    }
+                    finally {
+                        this.update('chip', 'Llama Coder');
+                    }
+                }
+                else {
+                    if (cached !== null) {
+                        res = cached;
+                    }
+                }
+                if (token.isCancellationRequested) {
+                    (0, log_1.info)(`Canceled after AI completion.`);
+                    return;
+                }
+                // Return result
+                if (res && res.trim() !== '') {
+                    return [{
+                            insertText: res,
+                            range: new vscode_1.default.Range(position, position),
+                        }];
+                }
+                // Nothing to complete
+                return;
+            });
+        }
+        catch (e) {
+            (0, log_1.warn)('Error during inference:', e);
+        }
+    }
+}
+exports.PromptProvider = PromptProvider;
+
+
+/***/ }),
+/* 16 */
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.warn = exports.info = exports.registerLogger = void 0;
+let logger = null;
+function registerLogger(channel) {
+    logger = channel;
+}
+exports.registerLogger = registerLogger;
+function info(message, ...args) {
+    if (logger) {
+        logger.info(message, ...args);
+    }
+}
+exports.info = info;
+function warn(message, ...args) {
+    if (logger) {
+        logger.warn(message, ...args);
+    }
+}
+exports.warn = warn;
+
+
+/***/ }),
+/* 17 */
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.autocomplete = void 0;
+const ollamaTokenGenerator_1 = __webpack_require__(18);
+const text_1 = __webpack_require__(20);
+const log_1 = __webpack_require__(16);
+const models_1 = __webpack_require__(21);
+async function autocomplete(args) {
+    let prompt = (0, models_1.adaptPrompt)({ prefix: args.prefix, suffix: args.suffix, format: args.format });
+    // Calculate arguments
+    let data = {
+        model: args.model,
+        prompt: prompt.prompt,
+        raw: true,
+        options: {
+            stop: prompt.stop,
+            num_predict: args.maxTokens,
+            temperature: args.temperature
+        }
+    };
+    // Receiving tokens
+    let res = '';
+    let totalLines = 1;
+    let blockStack = [];
+    outer: for await (let tokens of (0, ollamaTokenGenerator_1.ollamaTokenGenerator)(args.endpoint + '/api/generate', data, args.bearerToken)) {
+        if (args.canceled && args.canceled()) {
+            break;
+        }
+        // Block stack
+        for (let c of tokens.response) {
+            // Open block
+            if (c === '[') {
+                blockStack.push('[');
+            }
+            else if (c === '(') {
+                blockStack.push('(');
+            }
+            if (c === '{') {
+                blockStack.push('{');
+            }
+            // Close block
+            if (c === ']') {
+                if (blockStack.length > 0 && blockStack[blockStack.length - 1] === '[') {
+                    blockStack.pop();
+                }
+                else {
+                    (0, log_1.info)('Block stack error, breaking.');
+                    break outer;
+                }
+            }
+            if (c === ')') {
+                if (blockStack.length > 0 && blockStack[blockStack.length - 1] === '(') {
+                    blockStack.pop();
+                }
+                else {
+                    (0, log_1.info)('Block stack error, breaking.');
+                    break outer;
+                }
+            }
+            if (c === '}') {
+                if (blockStack.length > 0 && blockStack[blockStack.length - 1] === '{') {
+                    blockStack.pop();
+                }
+                else {
+                    (0, log_1.info)('Block stack error, breaking.');
+                    break outer;
+                }
+            }
+            // Append charater
+            res += c;
+        }
+        // Update total lines
+        totalLines += (0, text_1.countSymbol)(tokens.response, '\n');
+        // Break if too many lines and on top level
+        if (totalLines > args.maxLines && blockStack.length === 0) {
+            (0, log_1.info)('Too many lines, breaking.');
+            break;
+        }
+    }
+    // Remove <EOT>
+    if (res.endsWith('<EOT>')) {
+        res = res.slice(0, res.length - 5);
+    }
+    // Trim ends of all lines since sometimes the AI completion will add extra spaces
+    res = res.split('\n').map((v) => v.trimEnd()).join('\n');
+    return res;
+}
+exports.autocomplete = autocomplete;
+
+
+/***/ }),
+/* 18 */
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.ollamaTokenGenerator = void 0;
+const lineGenerator_1 = __webpack_require__(19);
+const log_1 = __webpack_require__(16);
+async function* ollamaTokenGenerator(url, data, bearerToken) {
+    for await (let line of (0, lineGenerator_1.lineGenerator)(url, data, bearerToken)) {
+        (0, log_1.info)('Receive line: ' + line);
+        let parsed;
+        try {
+            parsed = JSON.parse(line);
+        }
+        catch (e) {
+            console.warn('Receive wrong line: ' + line);
+            continue;
+        }
+        yield parsed;
+    }
+}
+exports.ollamaTokenGenerator = ollamaTokenGenerator;
+
+
+/***/ }),
+/* 19 */
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.lineGenerator = void 0;
+async function* lineGenerator(url, data, bearerToken) {
+    // Request
+    const controller = new AbortController();
+    let res = await fetch(url, {
+        method: 'POST',
+        body: JSON.stringify(data),
+        headers: bearerToken ? {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${bearerToken}`,
+        } : {
+            'Content-Type': 'application/json',
+        },
+        signal: controller.signal,
+    });
+    if (!res.ok || !res.body) {
+        throw Error('Unable to connect to backend');
+    }
+    // Reading stream
+    let stream = res.body.getReader();
+    const decoder = new TextDecoder();
+    let pending = '';
+    try {
+        while (true) {
+            const { done, value } = await stream.read();
+            // If ended
+            if (done) {
+                if (pending.length > 0) { // New lines are impossible here
+                    yield pending;
+                }
+                break;
+            }
+            // Append chunk
+            let chunk = decoder.decode(value);
+            console.warn(chunk);
+            pending += chunk;
+            // Yield results 
+            while (pending.indexOf('\n') >= 0) {
+                let offset = pending.indexOf('\n');
+                yield pending.slice(0, offset);
+                pending = pending.slice(offset + 1);
+            }
+        }
+    }
+    finally {
+        stream.releaseLock();
+        if (!stream.closed) { // Stop generation
+            await stream.cancel();
+        }
+        controller.abort();
+    }
+}
+exports.lineGenerator = lineGenerator;
+
+
+/***/ }),
+/* 20 */
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.countSymbol = exports.trimEndBlank = exports.trimIndent = exports.indentWidth = exports.isBlank = exports.countLines = void 0;
+function countLines(src) {
+    return countSymbol(src, '\n') + 1;
+}
+exports.countLines = countLines;
+function isBlank(src) {
+    return src.trim().length === 0;
+}
+exports.isBlank = isBlank;
+function indentWidth(src) {
+    for (let i = 0; i < src.length; i++) {
+        if (!isBlank(src[i])) {
+            return i;
+        }
+    }
+    return src.length;
+}
+exports.indentWidth = indentWidth;
+function trimIndent(src) {
+    // Prase lines
+    let lines = src.split('\n');
+    if (lines.length === 0) {
+        return '';
+    }
+    if (lines.length === 1) {
+        return lines[0].trim();
+    }
+    // Remove first and last empty line
+    if (isBlank(lines[0])) {
+        lines = lines.slice(1);
+    }
+    if (isBlank(lines[lines.length - 1])) {
+        lines = lines.slice(0, lines.length - 1);
+    }
+    if (lines.length === 0) {
+        return '';
+    }
+    // Find minimal indent
+    let indents = lines.filter((v) => !isBlank(v)).map((v) => indentWidth(v));
+    let minimal = indents.length > 0 ? Math.min(...indents) : 0;
+    // Trim indent
+    return lines.map((v) => isBlank(v) ? '' : v.slice(minimal).trimEnd()).join('\n');
+}
+exports.trimIndent = trimIndent;
+function trimEndBlank(src) {
+    let lines = src.split('\n');
+    for (let i = lines.length - 1; i++; i >= 0) {
+        if (isBlank(lines[i])) {
+            lines.splice(i);
+        }
+    }
+    return lines.join('\n');
+}
+exports.trimEndBlank = trimEndBlank;
+function countSymbol(src, char) {
+    let res = 0;
+    for (let i = 0; i < src.length; i++) {
+        if (src[i] === char) {
+            res++;
+        }
+    }
+    return res;
+}
+exports.countSymbol = countSymbol;
+
+
+/***/ }),
+/* 21 */
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.adaptPrompt = void 0;
+function adaptPrompt(args) {
+    // Common non FIM mode
+    // if (!args.suffix) {
+    //     return {
+    //         prompt: args.prefix,
+    //         stop: [`<END>`]
+    //     };
+    // }
+    // Starcoder FIM
+    if (args.format === 'deepseek') {
+        return {
+            prompt: `<｜fim▁begin｜>${args.prefix}<｜fim▁hole｜>${args.suffix}<｜fim▁end｜>`,
+            stop: [`<｜fim▁begin｜>`, `<｜fim▁hole｜>`, `<｜fim▁end｜>`, `<END>`]
+        };
+    }
+    // Stable code FIM
+    if (args.format === 'stable-code') {
+        return {
+            prompt: `<fim_prefix>${args.prefix}<fim_suffix>${args.suffix}<fim_middle>`,
+            stop: [`<|endoftext|>`]
+        };
+    }
+    // Codellama FIM
+    return {
+        prompt: `<PRE> ${args.prefix} <SUF> ${args.suffix} <MID>`,
+        stop: [`<END>`, `<EOD>`, `<EOT>`]
+    };
+}
+exports.adaptPrompt = adaptPrompt;
+
+
+/***/ }),
+/* 22 */
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+"use strict";
+
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.preparePrompt = void 0;
+const vscode_1 = __importDefault(__webpack_require__(1));
+const detectLanguage_1 = __webpack_require__(23);
+const fileHeaders_1 = __webpack_require__(26);
+const languages_1 = __webpack_require__(25);
+const config_1 = __webpack_require__(28);
+var decoder = new TextDecoder("utf8");
+function getNotebookDocument(document) {
+    return vscode_1.default.workspace.notebookDocuments
+        .find(x => x.uri.path === document.uri.path);
+}
+async function preparePrompt(document, position, context) {
+    // Load document text
+    let text = document.getText();
+    let offset = document.offsetAt(position);
+    let prefix = text.slice(0, offset);
+    let suffix = text.slice(offset);
+    let notebookConfig = config_1.config.notebook;
+    // If this is a notebook, add the surrounding cells to the prefix and suffix
+    let notebookDocument = getNotebookDocument(document);
+    let language = (0, detectLanguage_1.detectLanguage)(document.uri.fsPath, document.languageId);
+    let commentStart = undefined;
+    if (language) {
+        commentStart = languages_1.languages[language].comment?.start;
+    }
+    if (notebookDocument) {
+        let beforeCurrentCell = true;
+        let prefixCells = "";
+        let suffixCells = "";
+        notebookDocument.getCells().forEach((cell) => {
+            let out = "";
+            if (cell.document.uri.fragment === document.uri.fragment) {
+                beforeCurrentCell = false; // switch to suffix mode
+                return;
+            }
+            // add the markdown cell output to the prompt as a comment
+            if (cell.kind === vscode_1.default.NotebookCellKind.Markup && commentStart) {
+                if (notebookConfig.includeMarkup) {
+                    for (const line of cell.document.getText().split('\n')) {
+                        out += `\n${commentStart}${line}`;
+                    }
+                }
+            }
+            else {
+                out += cell.document.getText();
+            }
+            // if there is any outputs add them to the prompt as a comment
+            const addCellOutputs = notebookConfig.includeCellOutputs
+                && beforeCurrentCell
+                && cell.kind === vscode_1.default.NotebookCellKind.Code
+                && commentStart;
+            if (addCellOutputs) {
+                let cellOutputs = cell.outputs
+                    .map(x => x.items
+                    .filter(x => x.mime === 'text/plain')
+                    .map(x => decoder.decode(x.data))
+                    .map(x => x.slice(0, notebookConfig.cellOutputLimit).split('\n')))
+                    .flat(3);
+                if (cellOutputs.length > 0) {
+                    out += `\n${commentStart}Output:`;
+                    for (const line of cellOutputs) {
+                        out += `\n${commentStart}${line}`;
+                    }
+                }
+            }
+            // update the prefix/suffix
+            if (beforeCurrentCell) {
+                prefixCells += out;
+            }
+            else {
+                suffixCells += out;
+            }
+        });
+        prefix = prefixCells + prefix;
+        suffix = suffix + suffixCells;
+    }
+    // Trim suffix
+    // If suffix is too small it is safe to assume that it could be ignored which would allow us to use
+    // more powerful completition instead of in middle one
+    // if (suffix.length < 256) {
+    //     suffix = null;
+    // }
+    // Add filename and language to prefix
+    // NOTE: Most networks don't have a concept of filenames and expected language, but we expect that some files in training set has something in title that 
+    //       would indicate filename and language
+    // NOTE: If we can't detect language, we could ignore this since the number of languages that need detection is limited
+    if (language) {
+        prefix = (0, fileHeaders_1.fileHeaders)(prefix, document.uri.fsPath, languages_1.languages[language]);
+    }
+    return {
+        prefix,
+        suffix,
+    };
+}
+exports.preparePrompt = preparePrompt;
+
+
+/***/ }),
+/* 23 */
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+"use strict";
+
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.detectLanguage = void 0;
+const path_1 = __importDefault(__webpack_require__(24));
+const languages_1 = __webpack_require__(25);
+let aliases = {
+    'typescriptreact': 'typescript',
+    'javascriptreact': 'javascript',
+    'jsx': 'javascript'
+};
+function detectLanguage(uri, languageId) {
+    // Resolve aliases
+    if (!!languageId && aliases[languageId]) {
+        return aliases[languageId];
+    }
+    // Resolve using language id
+    if (!!languageId && !!languages_1.languages[languageId]) {
+        return languageId;
+    }
+    // Resolve using filename and extension
+    let basename = path_1.default.basename(uri);
+    let extname = path_1.default.extname(basename).toLowerCase();
+    // Check extensions
+    for (let lang in languages_1.languages) {
+        let k = languages_1.languages[lang];
+        for (let ex of k.extensions) {
+            if (extname === ex) {
+                return lang;
+            }
+        }
+    }
+    // Return result
+    return null;
+}
+exports.detectLanguage = detectLanguage;
+
+
+/***/ }),
+/* 24 */
+/***/ ((module) => {
+
+"use strict";
+module.exports = require("path");
+
+/***/ }),
+/* 25 */
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+//
+// Well Known Languages
+//
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.languages = void 0;
+//
+// List of well known languages
+// 
+// Extensions from: https://github.com/github-linguist/linguist/blob/master/lib/linguist/languages.yml
+//
+exports.languages = {
+    // Web languages
+    typescript: {
+        name: 'Typescript',
+        extensions: ['.ts', '.tsx', '.cts', '.mts'],
+        comment: { start: '//' }
+    },
+    javascript: {
+        name: 'Javascript',
+        extensions: ['.js', '.jsx', '.cjs'],
+        comment: { start: '//' }
+    },
+    html: {
+        name: 'HTML',
+        extensions: ['.htm', '.html'],
+        comment: { start: '<!--', end: '-->' }
+    },
+    css: {
+        name: 'CSS',
+        extensions: ['.css', '.scss', '.sass', '.less'],
+        // comment: { start: '/*', end: '*/' } // Disable comments for CSS - not useful anyway
+    },
+    json: {
+        name: 'JSON',
+        extensions: ['.json', '.jsonl', '.geojson'],
+        // comment: { start: '//' } // Disable comments for CSS - not useful anyway
+    },
+    yaml: {
+        name: 'YAML',
+        extensions: ['.yml', '.yaml'],
+        comment: { start: '#' }
+    },
+    xml: {
+        name: 'XML',
+        extensions: ['.xml'],
+        comment: { start: '<!--', end: '-->' }
+    },
+    // Generic languages
+    java: {
+        name: 'Java',
+        extensions: ['.java'],
+        comment: { start: '//' }
+    },
+    kotlin: {
+        name: 'Kotlin',
+        extensions: ['.kt', '.ktm', '.kts'],
+        comment: { start: '//' }
+    },
+    swift: {
+        name: 'Swift',
+        extensions: ['.swift'],
+        comment: { start: '//' }
+    },
+    "objective-c": {
+        name: 'Objective C',
+        extensions: ['.h', '.m', '.mm'],
+        comment: { start: '//' }
+    },
+    rust: {
+        name: 'Rust',
+        extensions: ['.rs', '.rs.in'],
+        comment: { start: '//' }
+    },
+    python: {
+        name: 'Python',
+        extensions: ['.py', 'ipynb'],
+        comment: { start: '#' }
+    },
+    c: {
+        name: 'C',
+        extensions: ['.c', '.h'],
+        comment: { start: '//' }
+    },
+    cpp: {
+        name: 'C++',
+        extensions: ['.cpp', '.h'],
+        comment: { start: '//' }
+    },
+    go: {
+        name: 'Go',
+        extensions: ['.go'],
+        comment: { start: '//' }
+    },
+    php: {
+        name: 'PHP',
+        extensions: ['.aw', '.ctp', '.fcgi', '.inc', '.php', '.php3', '.php4', '.php5', '.phps', '.phpt'],
+        comment: { start: '//' }
+    },
+    // Shell
+    bat: {
+        name: 'BAT file',
+        extensions: ['.bat', '.cmd'],
+        comment: { start: 'REM' }
+    },
+    shellscript: {
+        name: 'Shell',
+        extensions: ['.bash', '.sh'],
+        comment: { start: '#' }
+    }
+};
+
+
+/***/ }),
+/* 26 */
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.fileHeaders = void 0;
+const comment_1 = __webpack_require__(27);
+function fileHeaders(content, uri, language) {
+    let res = content;
+    if (language) {
+        // Add path marker
+        let pathMarker = (0, comment_1.comment)('Path: ' + uri, language);
+        if (pathMarker) {
+            res = pathMarker + '\n' + res;
+        }
+        // Add language marker
+        let typeMarker = (0, comment_1.comment)('Language: ' + language.name, language);
+        if (typeMarker) {
+            res = typeMarker + '\n' + res;
+        }
+    }
+    return res;
+}
+exports.fileHeaders = fileHeaders;
+
+
+/***/ }),
+/* 27 */
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.comment = void 0;
+function comment(text, language) {
+    if (language.comment) {
+        if (language.comment.end) {
+            return `${language.comment.start} ${text} ${language.comment.end}`;
+        }
+        else {
+            return `${language.comment.start} ${text}`;
+        }
+    }
+    return null;
+}
+exports.comment = comment;
+
+
+/***/ }),
+/* 28 */
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+"use strict";
+
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.config = void 0;
+const vscode_1 = __importDefault(__webpack_require__(1));
+class Config {
+    // Inference
+    get inference() {
+        let config = this.#config;
+        // Load endpoint
+        let endpoint = config.get('endpoint').trim();
+        if (endpoint.endsWith('/')) {
+            endpoint = endpoint.slice(0, endpoint.length - 1).trim();
+        }
+        if (endpoint === '') {
+            endpoint = 'http://127.0.0.1:11434';
+        }
+        let bearerToken = config.get('bearerToken');
+        // Load general paremeters
+        let maxLines = config.get('maxLines');
+        let maxTokens = config.get('maxTokens');
+        let temperature = config.get('temperature');
+        // Load model
+        let modelName = config.get('model');
+        let modelFormat = 'codellama';
+        if (modelName === 'custom') {
+            modelName = config.get('custom.model');
+            modelFormat = config.get('cutom.format');
+        }
+        else {
+            if (modelName.startsWith('deepseek-coder')) {
+                modelFormat = 'deepseek';
+            }
+            else if (modelName.startsWith('stable-code')) {
+                modelFormat = 'stable-code';
+            }
+        }
+        let delay = config.get('delay');
+        return {
+            endpoint,
+            bearerToken,
+            maxLines,
+            maxTokens,
+            temperature,
+            modelName,
+            modelFormat,
+            delay
+        };
+    }
+    // Notebook
+    get notebook() {
+        let config = vscode_1.default.workspace.getConfiguration('notebook');
+        let includeMarkup = config.get('includeMarkup');
+        let includeCellOutputs = config.get('includeCellOutputs');
+        let cellOutputLimit = config.get('cellOutputLimit');
+        return {
+            includeMarkup,
+            includeCellOutputs,
+            cellOutputLimit,
+        };
+    }
+    get #config() {
+        return vscode_1.default.workspace.getConfiguration('inference');
+    }
+    ;
+}
+exports.config = new Config();
+
+
+/***/ }),
+/* 29 */
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.AsyncLock = void 0;
+class AsyncLock {
+    permits = 1;
+    promiseResolverQueue = [];
+    async inLock(func) {
+        try {
+            await this.lock();
+            return await func();
+        }
+        finally {
+            this.unlock();
+        }
+    }
+    async lock() {
+        if (this.permits > 0) {
+            this.permits = this.permits - 1;
+            return;
+        }
+        await new Promise(resolve => this.promiseResolverQueue.push(resolve));
+    }
+    unlock() {
+        this.permits += 1;
+        if (this.permits > 1 && this.promiseResolverQueue.length > 0) {
+            throw new Error('this.permits should never be > 0 when there is someone waiting.');
+        }
+        else if (this.permits === 1 && this.promiseResolverQueue.length > 0) {
+            // If there is someone else waiting, immediately consume the permit that was released
+            // at the beginning of this function and let the waiting function resume.
+            this.permits -= 1;
+            const nextResolver = this.promiseResolverQueue.shift();
+            // Resolve on the next tick
+            if (nextResolver) {
+                setTimeout(() => {
+                    nextResolver(true);
+                }, 0);
+            }
+        }
+    }
+}
+exports.AsyncLock = AsyncLock;
+
+
+/***/ }),
+/* 30 */
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.setPromptToCache = exports.getFromPromptCache = void 0;
+// Remove all newlines, double spaces, etc
+function normalizeText(src) {
+    src = src.split('\n').join(' ');
+    src = src.replace(/\s+/gm, ' ');
+    return src;
+}
+function extractPromptCacheKey(args) {
+    if (args.suffix) {
+        return normalizeText(args.prefix + ' ##CURSOR## ' + args.suffix);
+    }
+    else {
+        return normalizeText(args.prefix);
+    }
+}
+// TODO: make it LRU
+let cache = {};
+function getFromPromptCache(args) {
+    const key = extractPromptCacheKey(args);
+    return cache[key];
+}
+exports.getFromPromptCache = getFromPromptCache;
+function setPromptToCache(args) {
+    const key = extractPromptCacheKey(args);
+    cache[key] = args.value;
+}
+exports.setPromptToCache = setPromptToCache;
+
+
+/***/ }),
+/* 31 */
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.isNotNeeded = exports.isSupported = void 0;
+function isSupported(doc) {
+    return doc.uri.scheme === 'file' || doc.uri.scheme === 'vscode-notebook-cell' || doc.uri.scheme === 'vscode-remote';
+}
+exports.isSupported = isSupported;
+function isNotNeeded(doc, position, context) {
+    // Avoid autocomplete on empty lines
+    // const line = doc.lineAt(position.line).text.trim();
+    // if (line.trim() === '') {
+    //     return true;
+    // }
+    // Avoid autocomplete when system menu is shown (ghost text is hidden anyway)
+    // if (context.selectedCompletionInfo) {
+    //     return true;
+    // }
+    return false;
+}
+exports.isNotNeeded = isNotNeeded;
+
+
+/***/ }),
+/* 32 */
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.ollamaCheckModel = void 0;
+const log_1 = __webpack_require__(16);
+async function ollamaCheckModel(endpoint, model, bearerToken) {
+    // Check if exists
+    let res = await fetch(endpoint + '/api/tags', {
+        headers: bearerToken ? {
+            Authorization: `Bearer ${bearerToken}`,
+        } : {},
+    });
+    if (!res.ok) {
+        (0, log_1.info)(await res.text());
+        (0, log_1.info)(endpoint + '/api/tags');
+        throw Error('Network response was not ok.');
+    }
+    let body = await res.json();
+    if (body.models.find((v) => v.name === model)) {
+        return true;
+    }
+    else {
+        return false;
+    }
+}
+exports.ollamaCheckModel = ollamaCheckModel;
+
+
+/***/ }),
+/* 33 */
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.ollamaDownloadModel = void 0;
+const lineGenerator_1 = __webpack_require__(19);
+const log_1 = __webpack_require__(16);
+async function ollamaDownloadModel(endpoint, model, bearerToken) {
+    (0, log_1.info)('Downloading model from ollama: ' + model);
+    for await (let line of (0, lineGenerator_1.lineGenerator)(endpoint + '/api/pull', { name: model }, bearerToken)) {
+        (0, log_1.info)('[DOWNLOAD] ' + line);
+    }
+}
+exports.ollamaDownloadModel = ollamaDownloadModel;
 
 
 /***/ })

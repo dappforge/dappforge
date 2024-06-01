@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
-import { getApiBaseUrl, SERVER_PORT } from './constants';
+import { getApiBaseUrl, SERVER_PORT } from '../constants';
 import polka from "polka";
-import { TokenManager } from './TokenManager';
+import { TokenManager } from '../TokenManager';
 
 
 export const authenticate = async (environment: string, fn?: () => void) => {

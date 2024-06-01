@@ -3,12 +3,29 @@
   "displayName": "dAppForge",
   "description": "AI tool tailored for blockchain developers to build better dApps faster, reducing development time.",
   "version": "0.0.1",
+  "icon:": "./media/dAppForge-mark.svg",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/dappforge/dappforge.git"
+  },
+  "bugs": {
+    "url": "https://github.com/dappforge/dappforge/issues"
+  },
+  "license": "MIT",
+  "categories": [
+    "Machine Learning",
+    "Programming Languages"
+  ],
+  "keywords": [
+    "code",
+    "assistant",
+    "ai",
+    "llm",
+    "development"
+  ],
   "engines": {
     "vscode": "^1.88.0"
   },
-  "categories": [
-    "Other"
-  ],
   "activationEvents": [],
   "main": "./dist/extension.js",
   "contributes": {
@@ -23,6 +40,112 @@
             "prod"
           ],
           "description": "The current environment for the extension."
+        },
+        "notebook.includeMarkup": {
+          "type": "boolean",
+          "default": true,
+          "description": "Include markup cell types in prompt"
+        },
+        "notebook.includeCellOutputs": {
+          "type": "boolean",
+          "default": false,
+          "description": "Include Cell previous output results in the prompt"
+        },
+        "notebook.cellOutputLimit": {
+          "type": "number",
+          "default": 256,
+          "description": "truncate cell output result if exceeds this limit"
+        },
+        "inference.endpoint": {
+          "type": "string",
+          "default": "",
+          "description": "Ollama Server Endpoint. Empty for local instance. Example: http://192.168.0.100:11434",
+          "order": 1
+        },
+        "inference.bearerToken": {
+          "type": "string",
+          "default": "",
+          "description": "Auth Bearer token that should be used for secure requests. Leave empty if not desired."
+        },
+        "inference.model": {
+          "type": "string",
+          "enum": [
+            "stable-code:3b-code-q4_0",
+            "codellama:7b-code-q4_K_S",
+            "codellama:7b-code-q4_K_M",
+            "codellama:7b-code-q6_K",
+            "codellama:7b-code-fp16",
+            "codellama:13b-code-q4_K_S",
+            "codellama:13b-code-q4_K_M",
+            "codellama:13b-code-q6_K",
+            "codellama:13b-code-fp16",
+            "codellama:34b-code-q4_K_S",
+            "codellama:34b-code-q4_K_M",
+            "codellama:34b-code-q6_K",
+            "codellama:70b-code-q4_K_S",
+            "codellama:70b-code-q4_K_M",
+            "codellama:70b-code-q6_K",
+            "codellama:70b-code-fp16",
+            "deepseek-coder:1.3b-base-q4_0",
+            "deepseek-coder:1.3b-base-q4_1",
+            "deepseek-coder:1.3b-base-q8_0",
+            "deepseek-coder:6.7b-base-q4_K_S",
+            "deepseek-coder:6.7b-base-q4_K_M",
+            "deepseek-coder:6.7b-base-q5_K_S",
+            "deepseek-coder:6.7b-base-q5_K_M",
+            "deepseek-coder:6.7b-base-q8_0",
+            "deepseek-coder:6.7b-base-fp16",
+            "deepseek-coder:33b-base-q4_K_S",
+            "deepseek-coder:33b-base-q4_K_M",
+            "deepseek-coder:33b-base-fp16",
+            "custom"
+          ],
+          "default": "stable-code:3b-code-q4_0",
+          "description": "Inference model to use",
+          "order": 2
+        },
+        "inference.temperature": {
+          "type": "number",
+          "default": 0.2,
+          "description": "Temperature of the model. Increasing the temperature will make the model answer more creatively.",
+          "order": 3
+        },
+        "inference.custom.model": {
+          "type": "string",
+          "default": "",
+          "description": "Custom model name",
+          "order": 4
+        },
+        "inference.custom.format": {
+          "type": "string",
+          "enum": [
+            "stable-code",
+            "codellama",
+            "deepseek"
+          ],
+          "default": "stable-code",
+          "description": "Custom model prompt format",
+          "order": 5
+        },
+        "inference.maxLines": {
+          "type": "number",
+          "default": 16,
+          "description": "Max number of lines to be keep.",
+          "order": 6
+        },
+        "inference.maxTokens": {
+          "type": "number",
+          "default": 256,
+          "description": "Max number of new tokens to be generated.",
+          "order": 7
+        },
+        "inference.delay": {
+          "type": "number",
+          "default": 250,
+          "description": "Completion request delay in milliseconds (0 - no delay, -1 - no completions).",
+          "order": 8,
+          "minimum": -1,
+          "maximum": 5000
         }
       }
     },
@@ -56,7 +179,24 @@
         "command": "dappforge.authenticate",
         "category": "dAppForge",
         "title": "Authenticate"
+      },
+      {
+        "command": "dappforge.openSettings",
+        "title": "dAppForge: Open Settings"
+      },
+      {
+        "command": "dappforge.pause",
+        "title": "dAppForge: Pause"
+      },
+      {
+        "command": "dappforge.resume",
+        "title": "dAppForge: Resume"
+      },
+      {
+        "command": "dappforge.toggle",
+        "title": "dAppForge: Toggle"
       }
+
     ]
   },
   "scripts": {

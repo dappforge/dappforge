@@ -26,6 +26,7 @@
             user = data;
           }
           loading = false;
+          tsvscode.postMessage({ type: "logged-in-out", value: user !== null });
       }
     });
 

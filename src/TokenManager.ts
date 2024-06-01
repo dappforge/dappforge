@@ -40,4 +40,8 @@ export class TokenManager {
     this.setToken(ACCESS_TOKEN_KEY, "");
     this.setToken(REFRESH_TOKEN_KEY, "");
   }
+
+  static loggedIn(): Boolean {
+    return (TokenManager.getToken(USER_ID_KEY) && TokenManager.getToken(USER_ID_KEY) !== "") ? true : false;
+  }
 }
