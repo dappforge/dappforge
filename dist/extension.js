@@ -939,7 +939,7 @@ class PromptProvider {
                         });
                     }
                     finally {
-                        this.update('chip', 'Llama Coder');
+                        this.update('chip', 'dAppForge');
                     }
                 }
                 else {

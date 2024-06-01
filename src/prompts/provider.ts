@@ -187,7 +187,7 @@ export class PromptProvider implements vscode.InlineCompletionItemProvider {
                             value: res
                         });
                     } finally {
-                        this.update('chip', 'Llama Coder');
+                        this.update('chip', 'dAppForge');
                     }
                 } else {
                     if (cached !== null) {
