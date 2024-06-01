@@ -4,6 +4,7 @@
   "description": "AI tool tailored for blockchain developers to build better dApps faster, reducing development time.",
   "version": "0.0.1",
   "icon:": "./media/dAppForge-mark.svg",
+  "publisher": "dappforge",
   "repository": {
     "type": "git",
     "url": "https://github.com/dappforge/dappforge.git"
@@ -55,6 +56,16 @@
           "type": "number",
           "default": 256,
           "description": "truncate cell output result if exceeds this limit"
+        },        
+        "inference.aiProvider": {
+          "type": "string",
+          "enum": [
+            "dAppForge",
+            "Ollama"
+          ],
+          "default": "dAppForge",
+          "description": "Specify the AI provider to use.",
+          "order": 1
         },
         "inference.endpoint": {
           "type": "string",

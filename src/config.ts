@@ -6,6 +6,11 @@ class Config {
     // Inference
     get inference() {
         let config = this.#config;
+ 
+        let llm = (config.get('llm') as string).trim();
+        if (llm === '') {
+            llm = 'dappforge';
+        }
 
         // Load endpoint
         let endpoint = (config.get('endpoint') as string).trim();

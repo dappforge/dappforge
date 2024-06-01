@@ -842,6 +842,7 @@ class PromptProvider {
             if (this.paused) {
                 return;
             }
+            console.log(`provideInlineCompletionItems:document: ${JSON.stringify(document, undefined, 2)}`);
             // Ignore unsupported documents
             if (!(0, filter_1.isSupported)(document)) {
                 console.log(`Unsupported document: ${document.uri.toString()} ignored.`);
@@ -1599,6 +1600,10 @@ class Config {
     // Inference
     get inference() {
         let config = this.#config;
+        let llm = config.get('llm').trim();
+        if (llm === '') {
+            llm = 'dappforge';
+        }
         // Load endpoint
         let endpoint = config.get('endpoint').trim();
         if (endpoint.endsWith('/')) {
@@ -1746,14 +1751,21 @@ exports.setPromptToCache = setPromptToCache;
 
 /***/ }),
 /* 30 */
-/***/ ((__unused_webpack_module, exports) => {
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 "use strict";
 
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.isNotNeeded = exports.isSupported = void 0;
+const path_1 = __importDefault(__webpack_require__(23));
 function isSupported(doc) {
-    return doc.uri.scheme === 'file' || doc.uri.scheme === 'vscode-notebook-cell' || doc.uri.scheme === 'vscode-remote';
+    return (doc.uri.scheme === 'file' ||
+        doc.uri.scheme === 'vscode-notebook-cell' ||
+        doc.uri.scheme === 'vscode-remote') &&
+        path_1.default.extname(doc.uri.fsPath) === ".rust";
 }
 exports.isSupported = isSupported;
 function isNotNeeded(doc, position, context) {

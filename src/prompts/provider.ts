@@ -82,6 +82,8 @@ export class PromptProvider implements vscode.InlineCompletionItemProvider {
                 return;
             }
 
+            console.log(`provideInlineCompletionItems:document: ${JSON.stringify(document, undefined ,2)}`);
+
             // Ignore unsupported documents
             if (!isSupported(document)) {
                 console.log(`Unsupported document: ${document.uri.toString()} ignored.`);
