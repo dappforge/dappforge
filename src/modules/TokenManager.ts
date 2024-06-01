@@ -5,6 +5,7 @@ export const ACCESS_TOKEN_KEY = "dappforgeaccesstoken";
 export const REFRESH_TOKEN_KEY = "dappforgerefreshtoken";
 export const USER_ID_KEY = "dappforgeuserid";
 export const BASIC_AUTH_TOKEN = "dappforgebasicauth";
+export const TOKEN_COUNT = "dappforgetokencount";
 
 export class TokenManager {
   static globalState: vscode.Memento;
@@ -39,6 +40,16 @@ export class TokenManager {
     this.setToken(USER_ID_KEY, "");
     this.setToken(ACCESS_TOKEN_KEY, "");
     this.setToken(REFRESH_TOKEN_KEY, "");
+    this.setToken(TOKEN_COUNT, "0");
+  }
+
+  static getTokenCount(): number {
+    const count: string | undefined = this.getToken(TOKEN_COUNT);
+    if (count && count.length > 0) {
+      return Number(count);
+    } else {
+      return 0;
+    }
   }
 
   static loggedIn(): Boolean {

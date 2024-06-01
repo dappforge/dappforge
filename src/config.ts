@@ -6,12 +6,10 @@ class Config {
     // Inference
     get inference() {
         let config = this.#config;
- 
-        let llm = (config.get('llm') as string).trim();
-        if (llm === '') {
-            llm = 'dappforge';
-        }
 
+        let aiProvider = (config.get('aiProvider') as string).trim();
+
+ 
         // Load endpoint
         let endpoint = (config.get('endpoint') as string).trim();
         if (endpoint.endsWith('/')) {
@@ -44,6 +42,7 @@ class Config {
         let delay = config.get('delay') as number;
 
         return {
+            aiProvider,
             endpoint,
             bearerToken,
             maxLines,

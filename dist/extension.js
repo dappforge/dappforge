@@ -179,6 +179,10 @@ class SidebarProvider {
                     }
                     else {
                         vscode.commands.executeCommand('dappforge.resume');
+                        TokenManager_1.TokenManager.setToken(TokenManager_1.TOKEN_COUNT, String(data.value.tokenCount));
+                        if (data.value.tokenCount <= 0) {
+                            vscode.commands.executeCommand('dappforge.pause');
+                        }
                     }
                     break;
                 }
@@ -687,12 +691,13 @@ module.exports = function (req) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.TokenManager = exports.BASIC_AUTH_TOKEN = exports.USER_ID_KEY = exports.REFRESH_TOKEN_KEY = exports.ACCESS_TOKEN_KEY = void 0;
+exports.TokenManager = exports.TOKEN_COUNT = exports.BASIC_AUTH_TOKEN = exports.USER_ID_KEY = exports.REFRESH_TOKEN_KEY = exports.ACCESS_TOKEN_KEY = void 0;
 const utils_1 = __webpack_require__(13);
 exports.ACCESS_TOKEN_KEY = "dappforgeaccesstoken";
 exports.REFRESH_TOKEN_KEY = "dappforgerefreshtoken";
 exports.USER_ID_KEY = "dappforgeuserid";
 exports.BASIC_AUTH_TOKEN = "dappforgebasicauth";
+exports.TOKEN_COUNT = "dappforgetokencount";
 class TokenManager {
     static globalState;
     static setBasicAuthToken() {
@@ -721,6 +726,16 @@ class TokenManager {
         this.setToken(exports.USER_ID_KEY, "");
         this.setToken(exports.ACCESS_TOKEN_KEY, "");
         this.setToken(exports.REFRESH_TOKEN_KEY, "");
+        this.setToken(exports.TOKEN_COUNT, "0");
+    }
+    static getTokenCount() {
+        const count = this.getToken(exports.TOKEN_COUNT);
+        if (count && count.length > 0) {
+            return Number(count);
+        }
+        else {
+            return 0;
+        }
     }
     static loggedIn() {
         return (TokenManager.getToken(exports.USER_ID_KEY) && TokenManager.getToken(exports.USER_ID_KEY) !== "") ? true : false;
@@ -880,49 +895,68 @@ class PromptProvider {
                     // Update status
                     this.update('sync~spin', 'dAppForge');
                     try {
-                        // Check model exists
-                        let modelExists = await (0, ollamaCheckModel_1.ollamaCheckModel)(inferenceConfig.endpoint, inferenceConfig.modelName, inferenceConfig.bearerToken);
-                        if (token.isCancellationRequested) {
-                            console.log(`Canceled after AI completion.`);
-                            return;
-                        }
-                        // Download model if not exists
-                        if (!modelExists) {
-                            // Check if user asked to ignore download
-                            if (this.context.globalState.get('llama-coder-download-ignored') === inferenceConfig.modelName) {
-                                console.log(`Ingoring since user asked to ignore download.`);
+                        console.log(`inferenceConfig.aiProvider: ${inferenceConfig.aiProvider}`);
+                        if (inferenceConfig.aiProvider === "Ollama") {
+                            // Check model exists
+                            let modelExists = await (0, ollamaCheckModel_1.ollamaCheckModel)(inferenceConfig.endpoint, inferenceConfig.modelName, inferenceConfig.bearerToken);
+                            if (token.isCancellationRequested) {
+                                console.log(`Canceled after AI completion.`);
                                 return;
                             }
-                            // Ask for download
-                            let download = await vscode_1.default.window.showInformationMessage(`Model ${inferenceConfig.modelName} is not downloaded. Do you want to download it? Answering "No" would require you to manually download model.`, 'Yes', 'No');
-                            if (download === 'No') {
-                                console.log(`Ingoring since user asked to ignore download.`);
-                                this.context.globalState.update('llama-coder-download-ignored', inferenceConfig.modelName);
+                            // Download model if not exists
+                            if (!modelExists) {
+                                // Check if user asked to ignore download
+                                if (this.context.globalState.get('llama-coder-download-ignored') === inferenceConfig.modelName) {
+                                    console.log(`Ingoring since user asked to ignore download.`);
+                                    return;
+                                }
+                                // Ask for download
+                                let download = await vscode_1.default.window.showInformationMessage(`Model ${inferenceConfig.modelName} is not downloaded. Do you want to download it? Answering "No" would require you to manually download model.`, 'Yes', 'No');
+                                if (download === 'No') {
+                                    console.log(`Ingoring since user asked to ignore download.`);
+                                    this.context.globalState.update('llama-coder-download-ignored', inferenceConfig.modelName);
+                                    return;
+                                }
+                                // Perform download
+                                this.update('sync~spin', 'Downloading');
+                                await (0, ollamaDownloadModel_1.ollamaDownloadModel)(inferenceConfig.endpoint, inferenceConfig.modelName, inferenceConfig.bearerToken);
+                                this.update('sync~spin', 'dAppForge');
+                            }
+                            if (token.isCancellationRequested) {
+                                console.log(`Canceled after AI completion.`);
                                 return;
                             }
-                            // Perform download
-                            this.update('sync~spin', 'Downloading');
-                            await (0, ollamaDownloadModel_1.ollamaDownloadModel)(inferenceConfig.endpoint, inferenceConfig.modelName, inferenceConfig.bearerToken);
-                            this.update('sync~spin', 'dAppForge');
+                            // Run AI completion
+                            console.log(`Running AI completion...`);
+                            res = await (0, autocomplete_1.autocomplete)({
+                                prefix: prepared.prefix,
+                                suffix: prepared.suffix,
+                                endpoint: inferenceConfig.endpoint,
+                                bearerToken: inferenceConfig.bearerToken,
+                                model: inferenceConfig.modelName,
+                                format: inferenceConfig.modelFormat,
+                                maxLines: inferenceConfig.maxLines,
+                                maxTokens: inferenceConfig.maxTokens,
+                                temperature: inferenceConfig.temperature,
+                                canceled: () => token.isCancellationRequested,
+                            });
                         }
-                        if (token.isCancellationRequested) {
-                            console.log(`Canceled after AI completion.`);
-                            return;
+                        else {
+                            // Run AI completion
+                            console.log(`Running AI completion...`);
+                            res = await (0, autocomplete_1.dappforgeAutocomplete)({
+                                prefix: prepared.prefix,
+                                suffix: prepared.suffix,
+                                endpoint: inferenceConfig.endpoint,
+                                bearerToken: inferenceConfig.bearerToken,
+                                model: inferenceConfig.modelName,
+                                format: inferenceConfig.modelFormat,
+                                maxLines: inferenceConfig.maxLines,
+                                maxTokens: inferenceConfig.maxTokens,
+                                temperature: inferenceConfig.temperature,
+                                canceled: () => token.isCancellationRequested,
+                            });
                         }
-                        // Run AI completion
-                        console.log(`Running AI completion...`);
-                        res = await (0, autocomplete_1.autocomplete)({
-                            prefix: prepared.prefix,
-                            suffix: prepared.suffix,
-                            endpoint: inferenceConfig.endpoint,
-                            bearerToken: inferenceConfig.bearerToken,
-                            model: inferenceConfig.modelName,
-                            format: inferenceConfig.modelFormat,
-                            maxLines: inferenceConfig.maxLines,
-                            maxTokens: inferenceConfig.maxTokens,
-                            temperature: inferenceConfig.temperature,
-                            canceled: () => token.isCancellationRequested,
-                        });
                         console.log(`AI completion completed: ${res}`);
                         // Put to cache
                         (0, promptCache_1.setPromptToCache)({
@@ -970,9 +1004,11 @@ exports.PromptProvider = PromptProvider;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.autocomplete = void 0;
+exports.dappforgeAutocomplete = exports.autocomplete = void 0;
 const ollamaTokenGenerator_1 = __webpack_require__(17);
 const text_1 = __webpack_require__(19);
+const TokenManager_1 = __webpack_require__(12);
+const utils_1 = __webpack_require__(13);
 const models_1 = __webpack_require__(20);
 async function autocomplete(args) {
     let prompt = (0, models_1.adaptPrompt)({ prefix: args.prefix, suffix: args.suffix, format: args.format });
@@ -1055,6 +1091,34 @@ async function autocomplete(args) {
     return res;
 }
 exports.autocomplete = autocomplete;
+async function dappforgeAutocomplete(args) {
+    const prompt = { "prefix_code": args.prefix };
+    const url = `${apiBaseUrl}/generate_code/${TokenManager_1.TokenManager.getToken(TokenManager_1.USER_ID_KEY)}`;
+    const basicAuthHeader = `Basic ${(0, utils_1.getBasicAuthToken)()}`;
+    console.log(`url: ${url} prompt: ${prompt} auth: ${basicAuthHeader}`);
+    const accessToken = TokenManager_1.TokenManager.getToken(TokenManager_1.ACCESS_TOKEN_KEY) || '';
+    const refreshToken = TokenManager_1.TokenManager.getToken(TokenManager_1.REFRESH_TOKEN_KEY) || '';
+    // Request
+    let res = await fetch(url, {
+        method: 'POST',
+        body: JSON.stringify(prompt),
+        headers: {
+            Authorization: basicAuthHeader,
+            'Content-Type': 'application/json',
+            'access-token': accessToken,
+            'refresh-token': refreshToken
+        }
+    });
+    const data = await res.json();
+    if (!res.ok || !res.body) {
+        throw Error('Unable to connect to backend');
+    }
+    console.log(`returned code: ${JSON.stringify(data, undefined, 2)}`);
+    // Trim ends of all lines since sometimes the AI completion will add extra spaces
+    //let result = data.split('\n').map((v) => v.trimEnd()).join('\n');
+    return 'some code';
+}
+exports.dappforgeAutocomplete = dappforgeAutocomplete;
 
 
 /***/ }),
@@ -1600,10 +1664,7 @@ class Config {
     // Inference
     get inference() {
         let config = this.#config;
-        let llm = config.get('llm').trim();
-        if (llm === '') {
-            llm = 'dappforge';
-        }
+        let aiProvider = config.get('aiProvider').trim();
         // Load endpoint
         let endpoint = config.get('endpoint').trim();
         if (endpoint.endsWith('/')) {
@@ -1634,6 +1695,7 @@ class Config {
         }
         let delay = config.get('delay');
         return {
+            aiProvider,
             endpoint,
             bearerToken,
             maxLines,

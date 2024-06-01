@@ -2,7 +2,7 @@ import * as vscode from "vscode";
 import { authenticate } from "./authenticate";
 import { getApiBaseUrl } from "../constants";
 import { getNonce } from "../getNonce";
-import { TokenManager } from "./TokenManager";
+import { TOKEN_COUNT, TokenManager } from "./TokenManager";
 
 export class SidebarProvider implements vscode.WebviewViewProvider {
   _view?: vscode.WebviewView;
@@ -45,6 +45,10 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
             vscode.commands.executeCommand('dappforge.pause');
           } else {
             vscode.commands.executeCommand('dappforge.resume');
+            TokenManager.setToken(TOKEN_COUNT, String(data.value.tokenCount));
+            if (data.value.tokenCount <= 0) {
+              vscode.commands.executeCommand('dappforge.pause');
+            } 
           }
           break;
         }

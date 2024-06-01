@@ -1,5 +1,7 @@
 import { ollamaTokenGenerator } from '../modules/ollamaTokenGenerator';
 import { countSymbol } from '../modules/text';
+import { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY, TokenManager, USER_ID_KEY } from '../modules/TokenManager';
+import { getBasicAuthToken } from '../utils';
 import { ModelFormat, adaptPrompt } from './processors/models';
 
 export async function autocomplete(args: {
@@ -99,4 +101,48 @@ export async function autocomplete(args: {
     res = res.split('\n').map((v) => v.trimEnd()).join('\n');
 
     return res;
+}
+
+
+export async function dappforgeAutocomplete(args: {
+    endpoint: string,
+    bearerToken: string,
+    model: string,
+    format: ModelFormat,
+    prefix: string,
+    suffix: string,
+    maxLines: number,
+    maxTokens: number,
+    temperature: number,
+    canceled?: () => boolean,
+}): Promise<string> {
+
+    const prompt = {"prefix_code": args.prefix };
+    const url = `${apiBaseUrl}/generate_code/${TokenManager.getToken(USER_ID_KEY)}`;
+    const basicAuthHeader = `Basic ${getBasicAuthToken()}`;
+    console.log(`url: ${url} prompt: ${prompt} auth: ${basicAuthHeader}`);
+    const accessToken = TokenManager.getToken(ACCESS_TOKEN_KEY) || '';
+    const refreshToken = TokenManager.getToken(REFRESH_TOKEN_KEY) || '';
+
+    // Request
+    let res = await fetch(url, {
+        method: 'POST',
+        body: JSON.stringify(prompt),
+        headers: {
+            Authorization: basicAuthHeader,
+            'Content-Type': 'application/json',
+            'access-token': accessToken,
+            'refresh-token': refreshToken
+        }
+    });
+    const data = await res.json();
+    if (!res.ok || !res.body) {
+        throw Error('Unable to connect to backend');
+    }
+    console.log(`returned code: ${JSON.stringify(data, undefined, 2)}`);
+
+    // Trim ends of all lines since sometimes the AI completion will add extra spaces
+    //let result = data.split('\n').map((v) => v.trimEnd()).join('\n');
+
+    return 'some code';
 }

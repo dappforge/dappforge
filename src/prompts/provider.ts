@@ -1,5 +1,5 @@
 import vscode from 'vscode';
-import { autocomplete } from './autocomplete';
+import { autocomplete, dappforgeAutocomplete } from './autocomplete';
 import { preparePrompt } from './preparePrompt';
 import { AsyncLock } from '../modules/lock';
 import { getFromPromptCache, setPromptToCache } from './promptCache';
@@ -130,55 +130,73 @@ export class PromptProvider implements vscode.InlineCompletionItemProvider {
                     // Update status
                     this.update('sync~spin', 'dAppForge');
                     try {
+                        console.log(`inferenceConfig.aiProvider: ${inferenceConfig.aiProvider}`);
+                        if (inferenceConfig.aiProvider === "Ollama") {
 
-                        // Check model exists
-                        let modelExists = await ollamaCheckModel(inferenceConfig.endpoint, inferenceConfig.modelName, inferenceConfig.bearerToken);
-                        if (token.isCancellationRequested) {
-                            console.log(`Canceled after AI completion.`);
-                            return;
-                        }
-
-                        // Download model if not exists
-                        if (!modelExists) {
-
-                            // Check if user asked to ignore download
-                            if (this.context.globalState.get('llama-coder-download-ignored') === inferenceConfig.modelName) {
-                                console.log(`Ingoring since user asked to ignore download.`);
+                            // Check model exists
+                            let modelExists = await ollamaCheckModel(inferenceConfig.endpoint, inferenceConfig.modelName, inferenceConfig.bearerToken);
+                            if (token.isCancellationRequested) {
+                                console.log(`Canceled after AI completion.`);
                                 return;
                             }
 
-                            // Ask for download
-                            let download = await vscode.window.showInformationMessage(`Model ${inferenceConfig.modelName} is not downloaded. Do you want to download it? Answering "No" would require you to manually download model.`, 'Yes', 'No');
-                            if (download === 'No') {
-                                console.log(`Ingoring since user asked to ignore download.`);
-                                this.context.globalState.update('llama-coder-download-ignored', inferenceConfig.modelName);
+                            // Download model if not exists
+                            if (!modelExists) {
+
+                                // Check if user asked to ignore download
+                                if (this.context.globalState.get('llama-coder-download-ignored') === inferenceConfig.modelName) {
+                                    console.log(`Ingoring since user asked to ignore download.`);
+                                    return;
+                                }
+
+                                // Ask for download
+                                let download = await vscode.window.showInformationMessage(`Model ${inferenceConfig.modelName} is not downloaded. Do you want to download it? Answering "No" would require you to manually download model.`, 'Yes', 'No');
+                                if (download === 'No') {
+                                    console.log(`Ingoring since user asked to ignore download.`);
+                                    this.context.globalState.update('llama-coder-download-ignored', inferenceConfig.modelName);
+                                    return;
+                                }
+
+                                // Perform download
+                                this.update('sync~spin', 'Downloading');
+                                await ollamaDownloadModel(inferenceConfig.endpoint, inferenceConfig.modelName, inferenceConfig.bearerToken);
+                                this.update('sync~spin', 'dAppForge');
+                            }
+                            if (token.isCancellationRequested) {
+                                console.log(`Canceled after AI completion.`);
                                 return;
                             }
 
-                            // Perform download
-                            this.update('sync~spin', 'Downloading');
-                            await ollamaDownloadModel(inferenceConfig.endpoint, inferenceConfig.modelName, inferenceConfig.bearerToken);
-                            this.update('sync~spin', 'dAppForge');
+                            // Run AI completion
+                            console.log(`Running AI completion...`);
+                            res = await autocomplete({
+                                prefix: prepared.prefix,
+                                suffix: prepared.suffix,
+                                endpoint: inferenceConfig.endpoint,
+                                bearerToken: inferenceConfig.bearerToken,
+                                model: inferenceConfig.modelName,
+                                format: inferenceConfig.modelFormat,
+                                maxLines: inferenceConfig.maxLines,
+                                maxTokens: inferenceConfig.maxTokens,
+                                temperature: inferenceConfig.temperature,
+                                canceled: () => token.isCancellationRequested,
+                            });
+                        } else {
+                            // Run AI completion
+                            console.log(`Running AI completion...`);
+                            res = await dappforgeAutocomplete({
+                                prefix: prepared.prefix,
+                                suffix: prepared.suffix,
+                                endpoint: inferenceConfig.endpoint,
+                                bearerToken: inferenceConfig.bearerToken,
+                                model: inferenceConfig.modelName,
+                                format: inferenceConfig.modelFormat,
+                                maxLines: inferenceConfig.maxLines,
+                                maxTokens: inferenceConfig.maxTokens,
+                                temperature: inferenceConfig.temperature,
+                                canceled: () => token.isCancellationRequested,
+                            });
                         }
-                        if (token.isCancellationRequested) {
-                            console.log(`Canceled after AI completion.`);
-                            return;
-                        }
-
-                        // Run AI completion
-                        console.log(`Running AI completion...`);
-                        res = await autocomplete({
-                            prefix: prepared.prefix,
-                            suffix: prepared.suffix,
-                            endpoint: inferenceConfig.endpoint,
-                            bearerToken: inferenceConfig.bearerToken,
-                            model: inferenceConfig.modelName,
-                            format: inferenceConfig.modelFormat,
-                            maxLines: inferenceConfig.maxLines,
-                            maxTokens: inferenceConfig.maxTokens,
-                            temperature: inferenceConfig.temperature,
-                            canceled: () => token.isCancellationRequested,
-                        });
                         console.log(`AI completion completed: ${res}`);
 
                         // Put to cache
