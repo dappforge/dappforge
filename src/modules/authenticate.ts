@@ -1,12 +1,11 @@
 import * as vscode from 'vscode';
 import { getApiBaseUrl, SERVER_PORT } from '../constants';
 import polka from "polka";
-import { TokenManager } from '../TokenManager';
+import { TokenManager } from './TokenManager';
 
 
 export const authenticate = async (environment: string, fn?: () => void) => {
     const apiBaseUrl = getApiBaseUrl(environment);
-    console.log(`Authenticate environment: ${environment} url: ${apiBaseUrl}`);
     vscode.commands.executeCommand("vscode.open", vscode.Uri.parse(apiBaseUrl + "/auth/github"));
     const app = polka();
 

@@ -1,6 +1,5 @@
 import { ollamaTokenGenerator } from '../modules/ollamaTokenGenerator';
 import { countSymbol } from '../modules/text';
-import { info } from '../modules/log';
 import { ModelFormat, adaptPrompt } from './processors/models';
 
 export async function autocomplete(args: {
@@ -57,7 +56,7 @@ export async function autocomplete(args: {
                 if (blockStack.length > 0 && blockStack[blockStack.length - 1] === '[') {
                     blockStack.pop();
                 } else {
-                    info('Block stack error, breaking.');
+                    console.log('Block stack error, breaking.');
                     break outer;
                 }
             }
@@ -65,7 +64,7 @@ export async function autocomplete(args: {
                 if (blockStack.length > 0 && blockStack[blockStack.length - 1] === '(') {
                     blockStack.pop();
                 } else {
-                    info('Block stack error, breaking.');
+                    console.log('Block stack error, breaking.');
                     break outer;
                 }
             }
@@ -73,7 +72,7 @@ export async function autocomplete(args: {
                 if (blockStack.length > 0 && blockStack[blockStack.length - 1] === '{') {
                     blockStack.pop();
                 } else {
-                    info('Block stack error, breaking.');
+                    console.log('Block stack error, breaking.');
                     break outer;
                 }
             }
@@ -86,7 +85,7 @@ export async function autocomplete(args: {
         totalLines += countSymbol(tokens.response, '\n');
         // Break if too many lines and on top level
         if (totalLines > args.maxLines && blockStack.length === 0) {
-            info('Too many lines, breaking.');
+            console.log('Too many lines, breaking.');
             break;
         }
     }

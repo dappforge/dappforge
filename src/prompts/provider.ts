@@ -1,5 +1,4 @@
 import vscode from 'vscode';
-import { info, warn } from '../modules/log';
 import { autocomplete } from './autocomplete';
 import { preparePrompt } from './preparePrompt';
 import { AsyncLock } from '../modules/lock';
@@ -8,7 +7,7 @@ import { isNotNeeded, isSupported } from './filter';
 import { ollamaCheckModel } from '../modules/ollamaCheckModel';
 import { ollamaDownloadModel } from '../modules/ollamaDownloadModel';
 import { config } from '../config';
-import { TokenManager, USER_ID_KEY } from '../TokenManager';
+import { TokenManager } from '../modules/TokenManager';
 
 type Status = {
     icon: string;
@@ -85,19 +84,19 @@ export class PromptProvider implements vscode.InlineCompletionItemProvider {
 
             // Ignore unsupported documents
             if (!isSupported(document)) {
-                info(`Unsupported document: ${document.uri.toString()} ignored.`);
+                console.log(`Unsupported document: ${document.uri.toString()} ignored.`);
                 return;
             }
 
             // Ignore if not needed
             if (isNotNeeded(document, position, context)) {
-                info('No inline completion required');
+                console.log('No inline completion required');
                 return;
             }
 
             // Ignore if already canceled
             if (token.isCancellationRequested) {
-                info(`Canceled before AI completion.`);
+                console.log(`Canceled before AI completion.`);
                 return;
             }
 
@@ -107,7 +106,7 @@ export class PromptProvider implements vscode.InlineCompletionItemProvider {
                 // Prepare context
                 let prepared = await preparePrompt(document, position, context);
                 if (token.isCancellationRequested) {
-                    info(`Canceled before AI completion.`);
+                    console.log(`Canceled before AI completion.`);
                     return;
                 }
 
@@ -127,13 +126,13 @@ export class PromptProvider implements vscode.InlineCompletionItemProvider {
                     let inferenceConfig = config.inference;
 
                     // Update status
-                    this.update('sync~spin', 'Llama Coder');
+                    this.update('sync~spin', 'dAppForge');
                     try {
 
                         // Check model exists
                         let modelExists = await ollamaCheckModel(inferenceConfig.endpoint, inferenceConfig.modelName, inferenceConfig.bearerToken);
                         if (token.isCancellationRequested) {
-                            info(`Canceled after AI completion.`);
+                            console.log(`Canceled after AI completion.`);
                             return;
                         }
 
@@ -142,14 +141,14 @@ export class PromptProvider implements vscode.InlineCompletionItemProvider {
 
                             // Check if user asked to ignore download
                             if (this.context.globalState.get('llama-coder-download-ignored') === inferenceConfig.modelName) {
-                                info(`Ingoring since user asked to ignore download.`);
+                                console.log(`Ingoring since user asked to ignore download.`);
                                 return;
                             }
 
                             // Ask for download
                             let download = await vscode.window.showInformationMessage(`Model ${inferenceConfig.modelName} is not downloaded. Do you want to download it? Answering "No" would require you to manually download model.`, 'Yes', 'No');
                             if (download === 'No') {
-                                info(`Ingoring since user asked to ignore download.`);
+                                console.log(`Ingoring since user asked to ignore download.`);
                                 this.context.globalState.update('llama-coder-download-ignored', inferenceConfig.modelName);
                                 return;
                             }
@@ -157,15 +156,15 @@ export class PromptProvider implements vscode.InlineCompletionItemProvider {
                             // Perform download
                             this.update('sync~spin', 'Downloading');
                             await ollamaDownloadModel(inferenceConfig.endpoint, inferenceConfig.modelName, inferenceConfig.bearerToken);
-                            this.update('sync~spin', 'Llama Coder');
+                            this.update('sync~spin', 'dAppForge');
                         }
                         if (token.isCancellationRequested) {
-                            info(`Canceled after AI completion.`);
+                            console.log(`Canceled after AI completion.`);
                             return;
                         }
 
                         // Run AI completion
-                        info(`Running AI completion...`);
+                        console.log(`Running AI completion...`);
                         res = await autocomplete({
                             prefix: prepared.prefix,
                             suffix: prepared.suffix,
@@ -178,7 +177,7 @@ export class PromptProvider implements vscode.InlineCompletionItemProvider {
                             temperature: inferenceConfig.temperature,
                             canceled: () => token.isCancellationRequested,
                         });
-                        info(`AI completion completed: ${res}`);
+                        console.log(`AI completion completed: ${res}`);
 
                         // Put to cache
                         setPromptToCache({
@@ -195,7 +194,7 @@ export class PromptProvider implements vscode.InlineCompletionItemProvider {
                     }
                 }
                 if (token.isCancellationRequested) {
-                    info(`Canceled after AI completion.`);
+                    console.log(`Canceled after AI completion.`);
                     return;
                 }
 
@@ -211,7 +210,7 @@ export class PromptProvider implements vscode.InlineCompletionItemProvider {
                 return;
             });
         } catch (e) {
-            warn('Error during inference:', e);
+            console.log('Error during inference:', e);
         }
     }
 }

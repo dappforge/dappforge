@@ -1,30 +1,24 @@
 // The module 'vscode' contains the VS Code extensibility API
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
-import { SidebarProvider } from './SidebarProvider';
+import { SidebarProvider } from './modules/SidebarProvider';
 import { authenticate } from './modules/authenticate';
-import { TokenManager, USER_ID_KEY } from './TokenManager';
+import { TokenManager, USER_ID_KEY } from './modules/TokenManager';
 import { PromptProvider } from './prompts/provider';
-import { info, registerLogger } from './modules/log';
 
 // This method is called when your extension is activated
 // Your extension is activated the very first time the command is executed
 export function activate(context: vscode.ExtensionContext) {
 
-	// Create logger
-	registerLogger(vscode.window.createOutputChannel( 'dAppForge', { log: true }));
-	info('dAppForge is activated.');
-
 	const config = vscode.workspace.getConfiguration('dAppForge');
 	const environment = config.get<string>('environment', 'dev');
-	console.log(`Current environment: ${environment}`);
+	console.log(`Environment: ${environment}`);
 	
 	TokenManager.globalState = context.globalState;
 	TokenManager.setBasicAuthToken();
 	if (!TokenManager.loggedIn()) {
 		TokenManager.resetTokens();
 	}
-	console.log(`Current tokens: ${TokenManager.getTokensAsJsonString()}`);
 
 	const sidebarProvider = new SidebarProvider(context.extensionUri, environment);
 

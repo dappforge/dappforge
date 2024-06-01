@@ -21,7 +21,6 @@
                 },
               }
             );
-            console.log(`user: ${response.body}`);
             const data = await response.json();
             user = data;
           }

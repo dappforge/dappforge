@@ -1,5 +1,5 @@
 import * as vscode from "vscode";
-import { getBasicAuthToken } from "./utils";
+import { getBasicAuthToken } from "../utils";
 
 export const ACCESS_TOKEN_KEY = "dappforgeaccesstoken";
 export const REFRESH_TOKEN_KEY = "dappforgerefreshtoken";

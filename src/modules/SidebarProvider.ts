@@ -1,7 +1,7 @@
 import * as vscode from "vscode";
-import { authenticate } from "./modules/authenticate";
-import { getApiBaseUrl } from "./constants";
-import { getNonce } from "./getNonce";
+import { authenticate } from "./authenticate";
+import { getApiBaseUrl } from "../constants";
+import { getNonce } from "../getNonce";
 import { TokenManager } from "./TokenManager";
 
 export class SidebarProvider implements vscode.WebviewViewProvider {
@@ -41,7 +41,6 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
           break;
         }
         case "logged-in-out": {
-          console.log(`logged-in-out: ${data.value}`);
           if (!data.value) {
             vscode.commands.executeCommand('dappforge.pause');
           } else {

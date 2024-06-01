@@ -37,22 +37,17 @@ const SidebarProvider_1 = __webpack_require__(2);
 const authenticate_1 = __webpack_require__(3);
 const TokenManager_1 = __webpack_require__(12);
 const provider_1 = __webpack_require__(15);
-const log_1 = __webpack_require__(16);
 // This method is called when your extension is activated
 // Your extension is activated the very first time the command is executed
 function activate(context) {
-    // Create logger
-    (0, log_1.registerLogger)(vscode.window.createOutputChannel('dAppForge', { log: true }));
-    (0, log_1.info)('dAppForge is activated.');
     const config = vscode.workspace.getConfiguration('dAppForge');
     const environment = config.get('environment', 'dev');
-    console.log(`Current environment: ${environment}`);
+    console.log(`Environment: ${environment}`);
     TokenManager_1.TokenManager.globalState = context.globalState;
     TokenManager_1.TokenManager.setBasicAuthToken();
     if (!TokenManager_1.TokenManager.loggedIn()) {
         TokenManager_1.TokenManager.resetTokens();
     }
-    console.log(`Current tokens: ${TokenManager_1.TokenManager.getTokensAsJsonString()}`);
     const sidebarProvider = new SidebarProvider_1.SidebarProvider(context.extensionUri, environment);
     //const item = vscode.window.createStatusBarItem(
     //		vscode.StatusBarAlignment.Right
@@ -179,7 +174,6 @@ class SidebarProvider {
                     break;
                 }
                 case "logged-in-out": {
-                    console.log(`logged-in-out: ${data.value}`);
                     if (!data.value) {
                         vscode.commands.executeCommand('dappforge.pause');
                     }
@@ -290,7 +284,6 @@ const polka_1 = __importDefault(__webpack_require__(5));
 const TokenManager_1 = __webpack_require__(12);
 const authenticate = async (environment, fn) => {
     const apiBaseUrl = (0, constants_1.getApiBaseUrl)(environment);
-    console.log(`Authenticate environment: ${environment} url: ${apiBaseUrl}`);
     vscode.commands.executeCommand("vscode.open", vscode.Uri.parse(apiBaseUrl + "/auth/github"));
     const app = (0, polka_1.default)();
     app.get(`/auth/:id/:accessToken/:refreshToken`, async (req, res) => {
@@ -783,15 +776,14 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.PromptProvider = void 0;
 const vscode_1 = __importDefault(__webpack_require__(1));
-const log_1 = __webpack_require__(16);
-const autocomplete_1 = __webpack_require__(17);
-const preparePrompt_1 = __webpack_require__(22);
-const lock_1 = __webpack_require__(29);
-const promptCache_1 = __webpack_require__(30);
-const filter_1 = __webpack_require__(31);
-const ollamaCheckModel_1 = __webpack_require__(32);
-const ollamaDownloadModel_1 = __webpack_require__(33);
-const config_1 = __webpack_require__(28);
+const autocomplete_1 = __webpack_require__(16);
+const preparePrompt_1 = __webpack_require__(21);
+const lock_1 = __webpack_require__(28);
+const promptCache_1 = __webpack_require__(29);
+const filter_1 = __webpack_require__(30);
+const ollamaCheckModel_1 = __webpack_require__(31);
+const ollamaDownloadModel_1 = __webpack_require__(32);
+const config_1 = __webpack_require__(27);
 const TokenManager_1 = __webpack_require__(12);
 class PromptProvider {
     lock = new lock_1.AsyncLock();
@@ -852,17 +844,17 @@ class PromptProvider {
             }
             // Ignore unsupported documents
             if (!(0, filter_1.isSupported)(document)) {
-                (0, log_1.info)(`Unsupported document: ${document.uri.toString()} ignored.`);
+                console.log(`Unsupported document: ${document.uri.toString()} ignored.`);
                 return;
             }
             // Ignore if not needed
             if ((0, filter_1.isNotNeeded)(document, position, context)) {
-                (0, log_1.info)('No inline completion required');
+                console.log('No inline completion required');
                 return;
             }
             // Ignore if already canceled
             if (token.isCancellationRequested) {
-                (0, log_1.info)(`Canceled before AI completion.`);
+                console.log(`Canceled before AI completion.`);
                 return;
             }
             // Execute in lock
@@ -870,7 +862,7 @@ class PromptProvider {
                 // Prepare context
                 let prepared = await (0, preparePrompt_1.preparePrompt)(document, position, context);
                 if (token.isCancellationRequested) {
-                    (0, log_1.info)(`Canceled before AI completion.`);
+                    console.log(`Canceled before AI completion.`);
                     return;
                 }
                 // Result
@@ -885,39 +877,39 @@ class PromptProvider {
                     // Config
                     let inferenceConfig = config_1.config.inference;
                     // Update status
-                    this.update('sync~spin', 'Llama Coder');
+                    this.update('sync~spin', 'dAppForge');
                     try {
                         // Check model exists
                         let modelExists = await (0, ollamaCheckModel_1.ollamaCheckModel)(inferenceConfig.endpoint, inferenceConfig.modelName, inferenceConfig.bearerToken);
                         if (token.isCancellationRequested) {
-                            (0, log_1.info)(`Canceled after AI completion.`);
+                            console.log(`Canceled after AI completion.`);
                             return;
                         }
                         // Download model if not exists
                         if (!modelExists) {
                             // Check if user asked to ignore download
                             if (this.context.globalState.get('llama-coder-download-ignored') === inferenceConfig.modelName) {
-                                (0, log_1.info)(`Ingoring since user asked to ignore download.`);
+                                console.log(`Ingoring since user asked to ignore download.`);
                                 return;
                             }
                             // Ask for download
                             let download = await vscode_1.default.window.showInformationMessage(`Model ${inferenceConfig.modelName} is not downloaded. Do you want to download it? Answering "No" would require you to manually download model.`, 'Yes', 'No');
                             if (download === 'No') {
-                                (0, log_1.info)(`Ingoring since user asked to ignore download.`);
+                                console.log(`Ingoring since user asked to ignore download.`);
                                 this.context.globalState.update('llama-coder-download-ignored', inferenceConfig.modelName);
                                 return;
                             }
                             // Perform download
                             this.update('sync~spin', 'Downloading');
                             await (0, ollamaDownloadModel_1.ollamaDownloadModel)(inferenceConfig.endpoint, inferenceConfig.modelName, inferenceConfig.bearerToken);
-                            this.update('sync~spin', 'Llama Coder');
+                            this.update('sync~spin', 'dAppForge');
                         }
                         if (token.isCancellationRequested) {
-                            (0, log_1.info)(`Canceled after AI completion.`);
+                            console.log(`Canceled after AI completion.`);
                             return;
                         }
                         // Run AI completion
-                        (0, log_1.info)(`Running AI completion...`);
+                        console.log(`Running AI completion...`);
                         res = await (0, autocomplete_1.autocomplete)({
                             prefix: prepared.prefix,
                             suffix: prepared.suffix,
@@ -930,7 +922,7 @@ class PromptProvider {
                             temperature: inferenceConfig.temperature,
                             canceled: () => token.isCancellationRequested,
                         });
-                        (0, log_1.info)(`AI completion completed: ${res}`);
+                        console.log(`AI completion completed: ${res}`);
                         // Put to cache
                         (0, promptCache_1.setPromptToCache)({
                             prefix: prepared.prefix,
@@ -948,7 +940,7 @@ class PromptProvider {
                     }
                 }
                 if (token.isCancellationRequested) {
-                    (0, log_1.info)(`Canceled after AI completion.`);
+                    console.log(`Canceled after AI completion.`);
                     return;
                 }
                 // Return result
@@ -963,7 +955,7 @@ class PromptProvider {
             });
         }
         catch (e) {
-            (0, log_1.warn)('Error during inference:', e);
+            console.log('Error during inference:', e);
         }
     }
 }
@@ -972,43 +964,15 @@ exports.PromptProvider = PromptProvider;
 
 /***/ }),
 /* 16 */
-/***/ ((__unused_webpack_module, exports) => {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.warn = exports.info = exports.registerLogger = void 0;
-let logger = null;
-function registerLogger(channel) {
-    logger = channel;
-}
-exports.registerLogger = registerLogger;
-function info(message, ...args) {
-    if (logger) {
-        logger.info(message, ...args);
-    }
-}
-exports.info = info;
-function warn(message, ...args) {
-    if (logger) {
-        logger.warn(message, ...args);
-    }
-}
-exports.warn = warn;
-
-
-/***/ }),
-/* 17 */
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.autocomplete = void 0;
-const ollamaTokenGenerator_1 = __webpack_require__(18);
-const text_1 = __webpack_require__(20);
-const log_1 = __webpack_require__(16);
-const models_1 = __webpack_require__(21);
+const ollamaTokenGenerator_1 = __webpack_require__(17);
+const text_1 = __webpack_require__(19);
+const models_1 = __webpack_require__(20);
 async function autocomplete(args) {
     let prompt = (0, models_1.adaptPrompt)({ prefix: args.prefix, suffix: args.suffix, format: args.format });
     // Calculate arguments
@@ -1048,7 +1012,7 @@ async function autocomplete(args) {
                     blockStack.pop();
                 }
                 else {
-                    (0, log_1.info)('Block stack error, breaking.');
+                    console.log('Block stack error, breaking.');
                     break outer;
                 }
             }
@@ -1057,7 +1021,7 @@ async function autocomplete(args) {
                     blockStack.pop();
                 }
                 else {
-                    (0, log_1.info)('Block stack error, breaking.');
+                    console.log('Block stack error, breaking.');
                     break outer;
                 }
             }
@@ -1066,7 +1030,7 @@ async function autocomplete(args) {
                     blockStack.pop();
                 }
                 else {
-                    (0, log_1.info)('Block stack error, breaking.');
+                    console.log('Block stack error, breaking.');
                     break outer;
                 }
             }
@@ -1077,7 +1041,7 @@ async function autocomplete(args) {
         totalLines += (0, text_1.countSymbol)(tokens.response, '\n');
         // Break if too many lines and on top level
         if (totalLines > args.maxLines && blockStack.length === 0) {
-            (0, log_1.info)('Too many lines, breaking.');
+            console.log('Too many lines, breaking.');
             break;
         }
     }
@@ -1093,18 +1057,17 @@ exports.autocomplete = autocomplete;
 
 
 /***/ }),
-/* 18 */
+/* 17 */
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.ollamaTokenGenerator = void 0;
-const lineGenerator_1 = __webpack_require__(19);
-const log_1 = __webpack_require__(16);
+const lineGenerator_1 = __webpack_require__(18);
 async function* ollamaTokenGenerator(url, data, bearerToken) {
     for await (let line of (0, lineGenerator_1.lineGenerator)(url, data, bearerToken)) {
-        (0, log_1.info)('Receive line: ' + line);
+        console.log('Receive line: ' + line);
         let parsed;
         try {
             parsed = JSON.parse(line);
@@ -1120,7 +1083,7 @@ exports.ollamaTokenGenerator = ollamaTokenGenerator;
 
 
 /***/ }),
-/* 19 */
+/* 18 */
 /***/ ((__unused_webpack_module, exports) => {
 
 "use strict";
@@ -1182,7 +1145,7 @@ exports.lineGenerator = lineGenerator;
 
 
 /***/ }),
-/* 20 */
+/* 19 */
 /***/ ((__unused_webpack_module, exports) => {
 
 "use strict";
@@ -1255,7 +1218,7 @@ exports.countSymbol = countSymbol;
 
 
 /***/ }),
-/* 21 */
+/* 20 */
 /***/ ((__unused_webpack_module, exports) => {
 
 "use strict";
@@ -1294,7 +1257,7 @@ exports.adaptPrompt = adaptPrompt;
 
 
 /***/ }),
-/* 22 */
+/* 21 */
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 "use strict";
@@ -1305,10 +1268,10 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.preparePrompt = void 0;
 const vscode_1 = __importDefault(__webpack_require__(1));
-const detectLanguage_1 = __webpack_require__(23);
-const fileHeaders_1 = __webpack_require__(26);
-const languages_1 = __webpack_require__(25);
-const config_1 = __webpack_require__(28);
+const detectLanguage_1 = __webpack_require__(22);
+const fileHeaders_1 = __webpack_require__(25);
+const languages_1 = __webpack_require__(24);
+const config_1 = __webpack_require__(27);
 var decoder = new TextDecoder("utf8");
 function getNotebookDocument(document) {
     return vscode_1.default.workspace.notebookDocuments
@@ -1401,7 +1364,7 @@ exports.preparePrompt = preparePrompt;
 
 
 /***/ }),
-/* 23 */
+/* 22 */
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 "use strict";
@@ -1411,8 +1374,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.detectLanguage = void 0;
-const path_1 = __importDefault(__webpack_require__(24));
-const languages_1 = __webpack_require__(25);
+const path_1 = __importDefault(__webpack_require__(23));
+const languages_1 = __webpack_require__(24);
 let aliases = {
     'typescriptreact': 'typescript',
     'javascriptreact': 'javascript',
@@ -1446,14 +1409,14 @@ exports.detectLanguage = detectLanguage;
 
 
 /***/ }),
-/* 24 */
+/* 23 */
 /***/ ((module) => {
 
 "use strict";
 module.exports = require("path");
 
 /***/ }),
-/* 25 */
+/* 24 */
 /***/ ((__unused_webpack_module, exports) => {
 
 "use strict";
@@ -1571,14 +1534,14 @@ exports.languages = {
 
 
 /***/ }),
-/* 26 */
+/* 25 */
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.fileHeaders = void 0;
-const comment_1 = __webpack_require__(27);
+const comment_1 = __webpack_require__(26);
 function fileHeaders(content, uri, language) {
     let res = content;
     if (language) {
@@ -1599,7 +1562,7 @@ exports.fileHeaders = fileHeaders;
 
 
 /***/ }),
-/* 27 */
+/* 26 */
 /***/ ((__unused_webpack_module, exports) => {
 
 "use strict";
@@ -1621,7 +1584,7 @@ exports.comment = comment;
 
 
 /***/ }),
-/* 28 */
+/* 27 */
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 "use strict";
@@ -1697,7 +1660,7 @@ exports.config = new Config();
 
 
 /***/ }),
-/* 29 */
+/* 28 */
 /***/ ((__unused_webpack_module, exports) => {
 
 "use strict";
@@ -1746,7 +1709,7 @@ exports.AsyncLock = AsyncLock;
 
 
 /***/ }),
-/* 30 */
+/* 29 */
 /***/ ((__unused_webpack_module, exports) => {
 
 "use strict";
@@ -1782,7 +1745,7 @@ exports.setPromptToCache = setPromptToCache;
 
 
 /***/ }),
-/* 31 */
+/* 30 */
 /***/ ((__unused_webpack_module, exports) => {
 
 "use strict";
@@ -1809,14 +1772,13 @@ exports.isNotNeeded = isNotNeeded;
 
 
 /***/ }),
-/* 32 */
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+/* 31 */
+/***/ ((__unused_webpack_module, exports) => {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.ollamaCheckModel = void 0;
-const log_1 = __webpack_require__(16);
 async function ollamaCheckModel(endpoint, model, bearerToken) {
     // Check if exists
     let res = await fetch(endpoint + '/api/tags', {
@@ -1825,8 +1787,8 @@ async function ollamaCheckModel(endpoint, model, bearerToken) {
         } : {},
     });
     if (!res.ok) {
-        (0, log_1.info)(await res.text());
-        (0, log_1.info)(endpoint + '/api/tags');
+        console.log(await res.text());
+        console.log(endpoint + '/api/tags');
         throw Error('Network response was not ok.');
     }
     let body = await res.json();
@@ -1841,19 +1803,18 @@ exports.ollamaCheckModel = ollamaCheckModel;
 
 
 /***/ }),
-/* 33 */
+/* 32 */
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.ollamaDownloadModel = void 0;
-const lineGenerator_1 = __webpack_require__(19);
-const log_1 = __webpack_require__(16);
+const lineGenerator_1 = __webpack_require__(18);
 async function ollamaDownloadModel(endpoint, model, bearerToken) {
-    (0, log_1.info)('Downloading model from ollama: ' + model);
+    console.log('Downloading model from ollama: ' + model);
     for await (let line of (0, lineGenerator_1.lineGenerator)(endpoint + '/api/pull', { name: model }, bearerToken)) {
-        (0, log_1.info)('[DOWNLOAD] ' + line);
+        console.log('[DOWNLOAD] ' + line);
     }
 }
 exports.ollamaDownloadModel = ollamaDownloadModel;
