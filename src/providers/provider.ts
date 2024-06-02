@@ -92,8 +92,11 @@ export class PromptProvider implements vscode.InlineCompletionItemProvider {
 
             console.log(`provideInlineCompletionItems:document: ${JSON.stringify(document, undefined ,2)}`);
 
+            // Config
+            let inferenceConfig = config.inference;
+
             // Ignore unsupported documents
-            if (!isSupported(document)) {
+            if (!isSupported(document, inferenceConfig.aiProvider)) {
                 console.log(`Unsupported document: ${document.uri.toString()} ignored.`);
                 return;
             }
@@ -131,9 +134,6 @@ export class PromptProvider implements vscode.InlineCompletionItemProvider {
 
                 // If not cached
                 if (cached === undefined) {
-
-                    // Config
-                    let inferenceConfig = config.inference;
 
                     // Update status
                     this.update('sync~spin', 'dAppForge');

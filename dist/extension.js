@@ -54,7 +54,7 @@ function activate(context) {
     context.subscriptions.push(vscode.commands.registerCommand('dappforge.openSettings', () => {
         vscode.commands.executeCommand('workbench.action.openSettings', '@ext:dappforge.dappforge');
     }));
-    let statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 1000);
+    let statusBarItem = vscode.window.createStatusBarItem('dappforge-statusbar', vscode.StatusBarAlignment.Right, 100);
     statusBarItem.command = 'dappforge.toggle';
     statusBarItem.text = `$(chip) dAppForge`;
     statusBarItem.show();
@@ -866,8 +866,10 @@ class PromptProvider {
                 return;
             }
             console.log(`provideInlineCompletionItems:document: ${JSON.stringify(document, undefined, 2)}`);
+            // Config
+            let inferenceConfig = config_1.config.inference;
             // Ignore unsupported documents
-            if (!(0, filter_1.isSupported)(document)) {
+            if (!(0, filter_1.isSupported)(document, inferenceConfig.aiProvider)) {
                 console.log(`Unsupported document: ${document.uri.toString()} ignored.`);
                 return;
             }
@@ -898,8 +900,6 @@ class PromptProvider {
                 });
                 // If not cached
                 if (cached === undefined) {
-                    // Config
-                    let inferenceConfig = config_1.config.inference;
                     // Update status
                     this.update('sync~spin', 'dAppForge');
                     try {
@@ -1851,11 +1851,11 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.isNotNeeded = exports.isSupported = void 0;
 const path_1 = __importDefault(__webpack_require__(23));
-function isSupported(doc) {
+function isSupported(doc, aiProvider) {
     return (doc.uri.scheme === 'file' ||
         doc.uri.scheme === 'vscode-notebook-cell' ||
         doc.uri.scheme === 'vscode-remote') &&
-        path_1.default.extname(doc.uri.fsPath) === ".rust";
+        (aiProvider !== 'dAppForge' || (aiProvider === 'dAppForge' && path_1.default.extname(doc.uri.fsPath) === ".rust"));
 }
 exports.isSupported = isSupported;
 function isNotNeeded(doc, position, context) {

@@ -26,7 +26,9 @@ export function activate(context: vscode.ExtensionContext) {
 	context.subscriptions.push(vscode.commands.registerCommand('dappforge.openSettings', () => {
 		vscode.commands.executeCommand('workbench.action.openSettings', '@ext:dappforge.dappforge');
 	}));
-	let statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 1000);
+	let statusBarItem = vscode.window.createStatusBarItem(
+		'dappforge-statusbar', 
+		vscode.StatusBarAlignment.Right, 100);
 	statusBarItem.command = 'dappforge.toggle';
 	statusBarItem.text = `$(chip) dAppForge`;
 	statusBarItem.show();

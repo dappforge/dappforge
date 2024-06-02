@@ -1,11 +1,11 @@
 import path from 'path';
 import type vscode from 'vscode';
 
-export function isSupported(doc: vscode.TextDocument) {
+export function isSupported(doc: vscode.TextDocument, aiProvider: string) {
     return (doc.uri.scheme === 'file' || 
         doc.uri.scheme === 'vscode-notebook-cell' ||
         doc.uri.scheme === 'vscode-remote') && 
-        path.extname(doc.uri.fsPath) === ".rust";
+        (aiProvider !== 'dAppForge' || (aiProvider === 'dAppForge' && path.extname(doc.uri.fsPath) === ".rust"));
 }
 
 export function isNotNeeded(doc: vscode.TextDocument, position: vscode.Position, context: vscode.InlineCompletionContext): boolean {
