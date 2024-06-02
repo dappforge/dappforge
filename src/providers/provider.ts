@@ -19,7 +19,7 @@ export class PromptProvider implements vscode.InlineCompletionItemProvider {
     lock = new AsyncLock();
     statusbar: vscode.StatusBarItem;
     context: vscode.ExtensionContext;
-    private _paused: boolean = false;
+    private _paused: boolean = true;
     private _authorised: boolean = false;
     private _status: Status = { icon: "chip", text: "dAppForge" };
 
@@ -31,6 +31,7 @@ export class PromptProvider implements vscode.InlineCompletionItemProvider {
         this.context = context;
         this._authorised = !TokenManager.loggedIn();
         this._paused = TokenManager.getToken(AUTO_COMPLETE_ACTIVE) === 'true';
+        this.update();
     }
 
     public set authorised(value: boolean) {
@@ -49,6 +50,9 @@ export class PromptProvider implements vscode.InlineCompletionItemProvider {
     }
 
     public get paused(): boolean {
+        if (!TokenManager.loggedIn()) {
+            return true;
+        }
         return this._paused;
     }
 

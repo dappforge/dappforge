@@ -23,16 +23,16 @@ export function activate(context: vscode.ExtensionContext) {
 	TokenManager.setToken(API_BASE_URL, getApiBaseUrl(environment));
 
 	// Create status bar
-	context.subscriptions.push(vscode.commands.registerCommand('dappforge.openSettings', () => {
-		vscode.commands.executeCommand('workbench.action.openSettings', '@ext:dappforge.dappforge');
-	}));
-	let statusBarItem = vscode.window.createStatusBarItem(
-		'dappforge-statusbar', 
-		vscode.StatusBarAlignment.Right, 100);
+	let statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
+	context.subscriptions.push(statusBarItem);
 	statusBarItem.command = 'dappforge.toggle';
 	statusBarItem.text = `$(chip) dAppForge`;
 	statusBarItem.show();
-	context.subscriptions.push(statusBarItem);
+
+	// Settings
+	context.subscriptions.push(vscode.commands.registerCommand('dappforge.openSettings', () => {
+		vscode.commands.executeCommand('workbench.action.openSettings', '@ext:dappforge.dappforge');
+	}));
 
 	// Create provider
 	const provider = new PromptProvider(statusBarItem, context);

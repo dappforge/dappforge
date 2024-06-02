@@ -51,14 +51,15 @@ function activate(context) {
     }
     TokenManager_1.TokenManager.setToken(TokenManager_1.API_BASE_URL, (0, constants_1.getApiBaseUrl)(environment));
     // Create status bar
-    context.subscriptions.push(vscode.commands.registerCommand('dappforge.openSettings', () => {
-        vscode.commands.executeCommand('workbench.action.openSettings', '@ext:dappforge.dappforge');
-    }));
-    let statusBarItem = vscode.window.createStatusBarItem('dappforge-statusbar', vscode.StatusBarAlignment.Right, 100);
+    let statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
+    context.subscriptions.push(statusBarItem);
     statusBarItem.command = 'dappforge.toggle';
     statusBarItem.text = `$(chip) dAppForge`;
     statusBarItem.show();
-    context.subscriptions.push(statusBarItem);
+    // Settings
+    context.subscriptions.push(vscode.commands.registerCommand('dappforge.openSettings', () => {
+        vscode.commands.executeCommand('workbench.action.openSettings', '@ext:dappforge.dappforge');
+    }));
     // Create provider
     const provider = new provider_1.PromptProvider(statusBarItem, context);
     context.subscriptions.push(vscode.languages.registerInlineCompletionItemProvider({ pattern: '**', }, provider));
@@ -807,7 +808,7 @@ class PromptProvider {
     lock = new lock_1.AsyncLock();
     statusbar;
     context;
-    _paused = false;
+    _paused = true;
     _authorised = false;
     _status = { icon: "chip", text: "dAppForge" };
     constructor(statusbar, context) {
@@ -815,6 +816,7 @@ class PromptProvider {
         this.context = context;
         this._authorised = !TokenManager_1.TokenManager.loggedIn();
         this._paused = TokenManager_1.TokenManager.getToken(TokenManager_1.AUTO_COMPLETE_ACTIVE) === 'true';
+        this.update();
     }
     set authorised(value) {
         this._authorised = TokenManager_1.TokenManager.loggedIn();
@@ -829,6 +831,9 @@ class PromptProvider {
         this.update();
     }
     get paused() {
+        if (!TokenManager_1.TokenManager.loggedIn()) {
+            return true;
+        }
         return this._paused;
     }
     update(icon, text) {
