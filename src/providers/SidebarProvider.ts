@@ -1,8 +1,8 @@
 import * as vscode from "vscode";
-import { authenticate } from "./authenticate";
+import { authenticate } from "../modules/authenticate";
 import { getApiBaseUrl } from "../constants";
 import { getNonce } from "../getNonce";
-import { API_BASE_URL, TOKEN_COUNT, TokenManager } from "./TokenManager";
+import { API_BASE_URL, TOKEN_COUNT, TokenManager } from "../modules/TokenManager";
 
 export class SidebarProvider implements vscode.WebviewViewProvider {
   _view?: vscode.WebviewView;
@@ -26,7 +26,7 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
       switch (data.type) {
         case "logout": {
           TokenManager.resetTokens();
-          vscode.commands.executeCommand('dappforge.pause');
+          vscode.commands.executeCommand('dappforge.unauthorised');
           break;
         }
         case "authenticate": {
@@ -40,13 +40,15 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
         }
         case "logged-in-out": {
           if (!data.value) {
-            vscode.commands.executeCommand('dappforge.pause');
+            TokenManager.resetTokens();
+            vscode.commands.executeCommand('dappforge.unauthorised');
           } else {
-            vscode.commands.executeCommand('dappforge.resume');
             TokenManager.setToken(TOKEN_COUNT, String(data.value.tokenCount));
             if (data.value.tokenCount <= 0) {
-              vscode.commands.executeCommand('dappforge.pause');
-            } 
+              vscode.commands.executeCommand('dappforge.unauthorised');
+            } else {
+              vscode.commands.executeCommand('dappforge.authorised');
+            }
           }
           break;
         }
@@ -65,7 +67,6 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
           break;
         }
         case "onError": {
-          console.log(`onerror ${data.value}`);
           if (!data.value) {
             return;
           }

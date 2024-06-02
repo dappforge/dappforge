@@ -1,13 +1,13 @@
 import vscode from 'vscode';
-import { autocomplete, dappforgeAutocomplete } from './autocomplete';
-import { preparePrompt } from './preparePrompt';
+import { autocomplete, dappforgeAutocomplete } from '../prompts/autocomplete';
+import { preparePrompt } from '../prompts/preparePrompt';
 import { AsyncLock } from '../modules/lock';
-import { getFromPromptCache, setPromptToCache } from './promptCache';
-import { isNotNeeded, isSupported } from './filter';
+import { getFromPromptCache, setPromptToCache } from '../prompts/promptCache';
+import { isNotNeeded, isSupported } from '../prompts/filter';
 import { ollamaCheckModel } from '../modules/ollamaCheckModel';
 import { ollamaDownloadModel } from '../modules/ollamaDownloadModel';
 import { config } from '../config';
-import { TokenManager } from '../modules/TokenManager';
+import { ACCESS_TOKEN_KEY, AUTO_COMPLETE_ACTIVE, TokenManager } from '../modules/TokenManager';
 
 type Status = {
     icon: string;
@@ -20,6 +20,7 @@ export class PromptProvider implements vscode.InlineCompletionItemProvider {
     statusbar: vscode.StatusBarItem;
     context: vscode.ExtensionContext;
     private _paused: boolean = false;
+    private _authorised: boolean = false;
     private _status: Status = { icon: "chip", text: "dAppForge" };
 
     constructor(
@@ -28,15 +29,22 @@ export class PromptProvider implements vscode.InlineCompletionItemProvider {
     ) {
         this.statusbar = statusbar;
         this.context = context;
-        this._paused = !TokenManager.loggedIn();
+        this._authorised = !TokenManager.loggedIn();
+        this._paused = TokenManager.getToken(AUTO_COMPLETE_ACTIVE) === 'true';
+    }
+
+    public set authorised(value: boolean) {
+        this._authorised = TokenManager.loggedIn();
+        this.update();
+    }
+
+    public get authorised(): boolean {
+        return this._authorised;
     }
     
     public set paused(value: boolean) {
-        if (!TokenManager.loggedIn()) {
-            this._paused = true;
-        } else {
-            this._paused = value;
-        }
+        this._paused = value;
+        TokenManager.setToken(AUTO_COMPLETE_ACTIVE, `${value}`);
         this.update();
     }
 
@@ -50,7 +58,7 @@ export class PromptProvider implements vscode.InlineCompletionItemProvider {
 
         let statusText = '';
         let statusTooltip = '';
-        if (this._paused) {
+        if (this.paused || !this.authorised) {
             statusText = `$(sync-ignored) ${this._status.text}`;
             statusTooltip = `${this._status.text} (Paused)`;
         } else {
@@ -78,7 +86,7 @@ export class PromptProvider implements vscode.InlineCompletionItemProvider {
         }
 
         try {
-            if (this.paused) {
+            if (this.paused || !this.authorised) {
                 return;
             }
 
@@ -231,6 +239,10 @@ export class PromptProvider implements vscode.InlineCompletionItemProvider {
             });
         } catch (e) {
             console.log('Error during inference:', e);
+            tsvscode.postMessage({
+                type: "onError",
+                value: `Error during inference: ${(e as Error).message}`,
+              });
         }
     }
 }

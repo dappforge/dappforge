@@ -50,13 +50,35 @@ function activate(context) {
         TokenManager_1.TokenManager.resetTokens();
     }
     TokenManager_1.TokenManager.setToken(TokenManager_1.API_BASE_URL, (0, constants_1.getApiBaseUrl)(environment));
+    // Create status bar
+    context.subscriptions.push(vscode.commands.registerCommand('dappforge.openSettings', () => {
+        vscode.commands.executeCommand('workbench.action.openSettings', '@ext:dappforge.dappforge');
+    }));
+    let statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 1000);
+    statusBarItem.command = 'dappforge.toggle';
+    statusBarItem.text = `$(chip) dAppForge`;
+    statusBarItem.show();
+    context.subscriptions.push(statusBarItem);
+    // Create provider
+    const provider = new provider_1.PromptProvider(statusBarItem, context);
+    context.subscriptions.push(vscode.languages.registerInlineCompletionItemProvider({ pattern: '**', }, provider));
+    context.subscriptions.push(vscode.commands.registerCommand('dappforge.pause', () => {
+        provider.paused = true;
+    }));
+    context.subscriptions.push(vscode.commands.registerCommand('dappforge.resume', () => {
+        provider.paused = false;
+    }));
+    context.subscriptions.push(vscode.commands.registerCommand('dappforge.toggle', () => {
+        provider.paused = !provider.paused;
+    }));
+    context.subscriptions.push(vscode.commands.registerCommand('dappforge.authorised', () => {
+        provider.authorised = true;
+    }));
+    context.subscriptions.push(vscode.commands.registerCommand('dappforge.unauthorised', () => {
+        provider.authorised = false;
+    }));
+    // Sidebar provider
     const sidebarProvider = new SidebarProvider_1.SidebarProvider(context.extensionUri);
-    //const item = vscode.window.createStatusBarItem(
-    //		vscode.StatusBarAlignment.Right
-    //  	);
-    //item.text = "$(beaker) Add Todo";
-    //item.command = "vstodo.addTodo";
-    //item.show();
     context.subscriptions.push(vscode.window.registerWebviewViewProvider("dappforge-sidebar", sidebarProvider));
     context.subscriptions.push(vscode.commands.registerCommand("dappforge.authenticate", () => {
         try {
@@ -69,28 +91,6 @@ function activate(context) {
     context.subscriptions.push(vscode.commands.registerCommand("dappforge.refresh", async () => {
         await vscode.commands.executeCommand("workbench.action.closeSidebar");
         await vscode.commands.executeCommand("workbench.view.extension.dappforge-sidebar-view");
-    }));
-    // Create status bar
-    context.subscriptions.push(vscode.commands.registerCommand('dappforge.openSettings', () => {
-        vscode.commands.executeCommand('workbench.action.openSettings', '@ext:dappforge.dappforge');
-    }));
-    let statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
-    statusBarItem.command = 'dappforge.toggle';
-    statusBarItem.text = `$(chip) dAppForge`;
-    statusBarItem.show();
-    context.subscriptions.push(statusBarItem);
-    // Create provider
-    const provider = new provider_1.PromptProvider(statusBarItem, context);
-    let disposable = vscode.languages.registerInlineCompletionItemProvider({ pattern: '**', }, provider);
-    context.subscriptions.push(disposable);
-    context.subscriptions.push(vscode.commands.registerCommand('dappforge.pause', () => {
-        provider.paused = true;
-    }));
-    context.subscriptions.push(vscode.commands.registerCommand('dappforge.resume', () => {
-        provider.paused = false;
-    }));
-    context.subscriptions.push(vscode.commands.registerCommand('dappforge.toggle', () => {
-        provider.paused = !provider.paused;
     }));
 }
 exports.activate = activate;
@@ -160,7 +160,7 @@ class SidebarProvider {
             switch (data.type) {
                 case "logout": {
                     TokenManager_1.TokenManager.resetTokens();
-                    vscode.commands.executeCommand('dappforge.pause');
+                    vscode.commands.executeCommand('dappforge.unauthorised');
                     break;
                 }
                 case "authenticate": {
@@ -174,13 +174,16 @@ class SidebarProvider {
                 }
                 case "logged-in-out": {
                     if (!data.value) {
-                        vscode.commands.executeCommand('dappforge.pause');
+                        TokenManager_1.TokenManager.resetTokens();
+                        vscode.commands.executeCommand('dappforge.unauthorised');
                     }
                     else {
-                        vscode.commands.executeCommand('dappforge.resume');
                         TokenManager_1.TokenManager.setToken(TokenManager_1.TOKEN_COUNT, String(data.value.tokenCount));
                         if (data.value.tokenCount <= 0) {
-                            vscode.commands.executeCommand('dappforge.pause');
+                            vscode.commands.executeCommand('dappforge.unauthorised');
+                        }
+                        else {
+                            vscode.commands.executeCommand('dappforge.authorised');
                         }
                     }
                     break;
@@ -200,7 +203,6 @@ class SidebarProvider {
                     break;
                 }
                 case "onError": {
-                    console.log(`onerror ${data.value}`);
                     if (!data.value) {
                         return;
                     }
@@ -690,7 +692,7 @@ module.exports = function (req) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.TokenManager = exports.API_BASE_URL = exports.TOKEN_COUNT = exports.BASIC_AUTH_TOKEN = exports.USER_ID_KEY = exports.REFRESH_TOKEN_KEY = exports.ACCESS_TOKEN_KEY = void 0;
+exports.TokenManager = exports.AUTO_COMPLETE_ACTIVE = exports.API_BASE_URL = exports.TOKEN_COUNT = exports.BASIC_AUTH_TOKEN = exports.USER_ID_KEY = exports.REFRESH_TOKEN_KEY = exports.ACCESS_TOKEN_KEY = void 0;
 const utils_1 = __webpack_require__(13);
 exports.ACCESS_TOKEN_KEY = "dappforgeaccesstoken";
 exports.REFRESH_TOKEN_KEY = "dappforgerefreshtoken";
@@ -698,6 +700,7 @@ exports.USER_ID_KEY = "dappforgeuserid";
 exports.BASIC_AUTH_TOKEN = "dappforgebasicauth";
 exports.TOKEN_COUNT = "dappforgetokencount";
 exports.API_BASE_URL = "dappforgetokenapibaseurl";
+exports.AUTO_COMPLETE_ACTIVE = "dappforgetokenautocompleteactive";
 class TokenManager {
     static globalState;
     static setBasicAuthToken() {
@@ -805,19 +808,24 @@ class PromptProvider {
     statusbar;
     context;
     _paused = false;
+    _authorised = false;
     _status = { icon: "chip", text: "dAppForge" };
     constructor(statusbar, context) {
         this.statusbar = statusbar;
         this.context = context;
-        this._paused = !TokenManager_1.TokenManager.loggedIn();
+        this._authorised = !TokenManager_1.TokenManager.loggedIn();
+        this._paused = TokenManager_1.TokenManager.getToken(TokenManager_1.AUTO_COMPLETE_ACTIVE) === 'true';
+    }
+    set authorised(value) {
+        this._authorised = TokenManager_1.TokenManager.loggedIn();
+        this.update();
+    }
+    get authorised() {
+        return this._authorised;
     }
     set paused(value) {
-        if (!TokenManager_1.TokenManager.loggedIn()) {
-            this._paused = true;
-        }
-        else {
-            this._paused = value;
-        }
+        this._paused = value;
+        TokenManager_1.TokenManager.setToken(TokenManager_1.AUTO_COMPLETE_ACTIVE, `${value}`);
         this.update();
     }
     get paused() {
@@ -828,7 +836,7 @@ class PromptProvider {
         this._status.text = text ? text : this._status.text;
         let statusText = '';
         let statusTooltip = '';
-        if (this._paused) {
+        if (this.paused || !this.authorised) {
             statusText = `$(sync-ignored) ${this._status.text}`;
             statusTooltip = `${this._status.text} (Paused)`;
         }
@@ -854,7 +862,7 @@ class PromptProvider {
             return;
         }
         try {
-            if (this.paused) {
+            if (this.paused || !this.authorised) {
                 return;
             }
             console.log(`provideInlineCompletionItems:document: ${JSON.stringify(document, undefined, 2)}`);
@@ -991,6 +999,10 @@ class PromptProvider {
         }
         catch (e) {
             console.log('Error during inference:', e);
+            tsvscode.postMessage({
+                type: "onError",
+                value: `Error during inference: ${e.message}`,
+            });
         }
     }
 }
@@ -1678,6 +1690,9 @@ class Config {
     get inference() {
         let config = this.#config;
         let aiProvider = config.get('aiProvider').trim();
+        if (aiProvider === '') {
+            aiProvider = 'dAppForge';
+        }
         // Load endpoint
         let endpoint = config.get('endpoint').trim();
         if (endpoint.endsWith('/')) {

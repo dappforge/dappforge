@@ -11,6 +11,7 @@
       const message = event.data;
       switch (message.type) {
         case "token":
+          console.log("token - get user");
           const tokens = JSON.parse(message.value);
           if (tokens.userId && tokens.userId !== "") {
             try {
@@ -28,10 +29,6 @@
               const data = await response.json();
               if (data && data.hasOwnProperty("id") > 0) {
                 user = data;
-                tsvscode.postMessage({
-                  type: "onInfo",
-                  value: "Logged in successfully",
-                });
               } else {
                 throw Error("Could not obtain user details from API");
               }
@@ -43,10 +40,13 @@
             }
           }
           loading = false;
+          console.log(`Bef call logged-in-out ${user === null}`);
           tsvscode.postMessage({ type: "logged-in-out", value: user });
       }
     });
 
+    // On mount of view we call get-token which in turn will call the webview
+    // 'token' event above
     tsvscode.postMessage({ type: "get-token", value: undefined });
   });
 </script>

@@ -7,6 +7,7 @@ export const USER_ID_KEY = "dappforgeuserid";
 export const BASIC_AUTH_TOKEN = "dappforgebasicauth";
 export const TOKEN_COUNT = "dappforgetokencount";
 export const API_BASE_URL = "dappforgetokenapibaseurl";
+export const AUTO_COMPLETE_ACTIVE = "dappforgetokenautocompleteactive";
 
 export class TokenManager {
   static globalState: vscode.Memento;
@@ -53,7 +54,7 @@ export class TokenManager {
     }
   }
 
-  static loggedIn(): Boolean {
+  static loggedIn(): boolean {
     return (TokenManager.getToken(USER_ID_KEY) && TokenManager.getToken(USER_ID_KEY) !== "") ? true : false;
   }
 }

@@ -1,10 +1,10 @@
 // The module 'vscode' contains the VS Code extensibility API
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
-import { SidebarProvider } from './modules/SidebarProvider';
+import { SidebarProvider } from './providers/SidebarProvider';
 import { authenticate } from './modules/authenticate';
 import { API_BASE_URL, TokenManager, USER_ID_KEY } from './modules/TokenManager';
-import { PromptProvider } from './prompts/provider';
+import { PromptProvider } from './providers/provider';
 import { getApiBaseUrl } from './constants';
 
 // This method is called when your extension is activated
@@ -22,44 +22,11 @@ export function activate(context: vscode.ExtensionContext) {
 	}
 	TokenManager.setToken(API_BASE_URL, getApiBaseUrl(environment));
 
-	const sidebarProvider = new SidebarProvider(context.extensionUri);
-
-	//const item = vscode.window.createStatusBarItem(
-	//		vscode.StatusBarAlignment.Right
-	//  	);
-	//item.text = "$(beaker) Add Todo";
-	//item.command = "vstodo.addTodo";
-	//item.show();
-	
-	context.subscriptions.push(
-		vscode.window.registerWebviewViewProvider("dappforge-sidebar", sidebarProvider)
-	);
-
-	context.subscriptions.push(
-		vscode.commands.registerCommand("dappforge.authenticate", () => {
-			try {
-				authenticate();
-			} catch (err) {
-				console.log(err);
-			}
-		})
-	);
-
-	context.subscriptions.push(
-		vscode.commands.registerCommand("dappforge.refresh", async () => {
-		  	await vscode.commands.executeCommand("workbench.action.closeSidebar");
-		  	await vscode.commands.executeCommand(
-				"workbench.view.extension.dappforge-sidebar-view"
-		  	);
-		})
-	);
-
 	// Create status bar
 	context.subscriptions.push(vscode.commands.registerCommand('dappforge.openSettings', () => {
 		vscode.commands.executeCommand('workbench.action.openSettings', '@ext:dappforge.dappforge');
 	}));
-
-	let statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
+	let statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 1000);
 	statusBarItem.command = 'dappforge.toggle';
 	statusBarItem.text = `$(chip) dAppForge`;
 	statusBarItem.show();
@@ -67,8 +34,7 @@ export function activate(context: vscode.ExtensionContext) {
 
 	// Create provider
 	const provider = new PromptProvider(statusBarItem, context);
-	let disposable = vscode.languages.registerInlineCompletionItemProvider({ pattern: '**', }, provider);
-	context.subscriptions.push(disposable);
+	context.subscriptions.push(vscode.languages.registerInlineCompletionItemProvider({ pattern: '**', }, provider));
 
 	context.subscriptions.push(vscode.commands.registerCommand('dappforge.pause', () => {
 		provider.paused = true;
@@ -79,6 +45,37 @@ export function activate(context: vscode.ExtensionContext) {
 	context.subscriptions.push(vscode.commands.registerCommand('dappforge.toggle', () => {
 		provider.paused = !provider.paused;
 	}));
+
+	context.subscriptions.push(vscode.commands.registerCommand('dappforge.authorised', () => {
+		provider.authorised = true;
+	}));
+
+	context.subscriptions.push(vscode.commands.registerCommand('dappforge.unauthorised', () => {
+		provider.authorised = false;
+	}));
+
+	// Sidebar provider
+	const sidebarProvider = new SidebarProvider(context.extensionUri);
+	context.subscriptions.push(
+		vscode.window.registerWebviewViewProvider("dappforge-sidebar", sidebarProvider)
+	);
+	context.subscriptions.push(
+		vscode.commands.registerCommand("dappforge.authenticate", () => {
+			try {
+				authenticate();
+			} catch (err) {
+				console.log(err);
+			}
+		})
+	);
+	context.subscriptions.push(
+		vscode.commands.registerCommand("dappforge.refresh", async () => {
+		  	await vscode.commands.executeCommand("workbench.action.closeSidebar");
+		  	await vscode.commands.executeCommand(
+				"workbench.view.extension.dappforge-sidebar-view"
+		  	);
+		})
+	);
 	
 }
 

@@ -8,7 +8,9 @@ class Config {
         let config = this.#config;
 
         let aiProvider = (config.get('aiProvider') as string).trim();
-
+        if (aiProvider === '') {
+            aiProvider = 'dAppForge';
+        }
  
         // Load endpoint
         let endpoint = (config.get('endpoint') as string).trim();
