@@ -11,7 +11,6 @@
       const message = event.data;
       switch (message.type) {
         case "token":
-          console.log("token - get user");
           const tokens = JSON.parse(message.value);
           if (tokens.userId && tokens.userId !== "") {
             try {
@@ -40,7 +39,6 @@
             }
           }
           loading = false;
-          console.log(`Bef call logged-in-out ${user === null}`);
           tsvscode.postMessage({ type: "logged-in-out", value: user });
       }
     });
