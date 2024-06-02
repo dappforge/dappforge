@@ -6,6 +6,7 @@ export const REFRESH_TOKEN_KEY = "dappforgerefreshtoken";
 export const USER_ID_KEY = "dappforgeuserid";
 export const BASIC_AUTH_TOKEN = "dappforgebasicauth";
 export const TOKEN_COUNT = "dappforgetokencount";
+export const API_BASE_URL = "dappforgetokenapibaseurl";
 
 export class TokenManager {
   static globalState: vscode.Memento;

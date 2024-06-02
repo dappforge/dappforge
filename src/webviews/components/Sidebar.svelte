@@ -13,16 +13,34 @@
         case "token":
           const tokens = JSON.parse(message.value);
           if (tokens.userId && tokens.userId !== "") {
-            const response = await fetch(
-              `${apiBaseUrl}/user/${tokens.userId}`,
-              {
-                headers: {
-                  authorization: `Basic ${tokens.basicAuthToken}`,
-                },
+            try {
+              const response = await fetch(
+                `${apiBaseUrl}/user/${tokens.userId}`,
+                {
+                  headers: {
+                    authorization: `Basic ${tokens.basicAuthToken}`,
+                  },
+                }
+              );
+              if (!response.ok || !response.body) {
+                throw Error("Unable to connect to API");
               }
-            );
-            const data = await response.json();
-            user = data;
+              const data = await response.json();
+              if (data && data.hasOwnProperty("id") > 0) {
+                user = data;
+                tsvscode.postMessage({
+                  type: "onInfo",
+                  value: "Logged in successfully",
+                });
+              } else {
+                throw Error("Could not obtain user details from API");
+              }
+            } catch (e) {
+              tsvscode.postMessage({
+                type: "onError",
+                value: (e as Error).message,
+              });
+            }
           }
           loading = false;
           tsvscode.postMessage({ type: "logged-in-out", value: user });

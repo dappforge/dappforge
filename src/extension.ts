@@ -3,8 +3,9 @@
 import * as vscode from 'vscode';
 import { SidebarProvider } from './modules/SidebarProvider';
 import { authenticate } from './modules/authenticate';
-import { TokenManager, USER_ID_KEY } from './modules/TokenManager';
+import { API_BASE_URL, TokenManager, USER_ID_KEY } from './modules/TokenManager';
 import { PromptProvider } from './prompts/provider';
+import { getApiBaseUrl } from './constants';
 
 // This method is called when your extension is activated
 // Your extension is activated the very first time the command is executed
@@ -19,8 +20,9 @@ export function activate(context: vscode.ExtensionContext) {
 	if (!TokenManager.loggedIn()) {
 		TokenManager.resetTokens();
 	}
+	TokenManager.setToken(API_BASE_URL, getApiBaseUrl(environment));
 
-	const sidebarProvider = new SidebarProvider(context.extensionUri, environment);
+	const sidebarProvider = new SidebarProvider(context.extensionUri);
 
 	//const item = vscode.window.createStatusBarItem(
 	//		vscode.StatusBarAlignment.Right
@@ -36,7 +38,7 @@ export function activate(context: vscode.ExtensionContext) {
 	context.subscriptions.push(
 		vscode.commands.registerCommand("dappforge.authenticate", () => {
 			try {
-				authenticate(environment);
+				authenticate();
 			} catch (err) {
 				console.log(err);
 			}

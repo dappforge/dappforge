@@ -2,15 +2,13 @@ import * as vscode from "vscode";
 import { authenticate } from "./authenticate";
 import { getApiBaseUrl } from "../constants";
 import { getNonce } from "../getNonce";
-import { TOKEN_COUNT, TokenManager } from "./TokenManager";
+import { API_BASE_URL, TOKEN_COUNT, TokenManager } from "./TokenManager";
 
 export class SidebarProvider implements vscode.WebviewViewProvider {
   _view?: vscode.WebviewView;
   _doc?: vscode.TextDocument;
 
-  constructor(private readonly _extensionUri: vscode.Uri,
-    private readonly _environment: string
-  ) {}
+  constructor(private readonly _extensionUri: vscode.Uri) {}
 
   public resolveWebviewView(webviewView: vscode.WebviewView) {
     this._view = webviewView;
@@ -32,7 +30,7 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
           break;
         }
         case "authenticate": {
-          authenticate(this._environment, () => {
+          authenticate(() => {
             webviewView.webview.postMessage({
               type: "token",
               value: TokenManager.getTokensAsJsonString()
@@ -67,6 +65,7 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
           break;
         }
         case "onError": {
+          console.log(`onerror ${data.value}`);
           if (!data.value) {
             return;
           }
@@ -116,8 +115,7 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
         <link href="${styleMainUri}" rel="stylesheet">
         <script nonce="${nonce}">
           const tsvscode = acquireVsCodeApi();
-          const apiBaseUrl = ${JSON.stringify(getApiBaseUrl(this._environment))}
-          const environment = ${JSON.stringify(this._environment)}
+          const apiBaseUrl = ${JSON.stringify(TokenManager.getToken(API_BASE_URL))}
         </script>
 			</head>
       <body>

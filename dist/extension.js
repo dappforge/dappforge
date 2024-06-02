@@ -37,6 +37,7 @@ const SidebarProvider_1 = __webpack_require__(2);
 const authenticate_1 = __webpack_require__(3);
 const TokenManager_1 = __webpack_require__(12);
 const provider_1 = __webpack_require__(15);
+const constants_1 = __webpack_require__(4);
 // This method is called when your extension is activated
 // Your extension is activated the very first time the command is executed
 function activate(context) {
@@ -48,7 +49,8 @@ function activate(context) {
     if (!TokenManager_1.TokenManager.loggedIn()) {
         TokenManager_1.TokenManager.resetTokens();
     }
-    const sidebarProvider = new SidebarProvider_1.SidebarProvider(context.extensionUri, environment);
+    TokenManager_1.TokenManager.setToken(TokenManager_1.API_BASE_URL, (0, constants_1.getApiBaseUrl)(environment));
+    const sidebarProvider = new SidebarProvider_1.SidebarProvider(context.extensionUri);
     //const item = vscode.window.createStatusBarItem(
     //		vscode.StatusBarAlignment.Right
     //  	);
@@ -58,7 +60,7 @@ function activate(context) {
     context.subscriptions.push(vscode.window.registerWebviewViewProvider("dappforge-sidebar", sidebarProvider));
     context.subscriptions.push(vscode.commands.registerCommand("dappforge.authenticate", () => {
         try {
-            (0, authenticate_1.authenticate)(environment);
+            (0, authenticate_1.authenticate)();
         }
         catch (err) {
             console.log(err);
@@ -137,17 +139,14 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.SidebarProvider = void 0;
 const vscode = __importStar(__webpack_require__(1));
 const authenticate_1 = __webpack_require__(3);
-const constants_1 = __webpack_require__(4);
 const getNonce_1 = __webpack_require__(14);
 const TokenManager_1 = __webpack_require__(12);
 class SidebarProvider {
     _extensionUri;
-    _environment;
     _view;
     _doc;
-    constructor(_extensionUri, _environment) {
+    constructor(_extensionUri) {
         this._extensionUri = _extensionUri;
-        this._environment = _environment;
     }
     resolveWebviewView(webviewView) {
         this._view = webviewView;
@@ -165,7 +164,7 @@ class SidebarProvider {
                     break;
                 }
                 case "authenticate": {
-                    (0, authenticate_1.authenticate)(this._environment, () => {
+                    (0, authenticate_1.authenticate)(() => {
                         webviewView.webview.postMessage({
                             type: "token",
                             value: TokenManager_1.TokenManager.getTokensAsJsonString()
@@ -201,6 +200,7 @@ class SidebarProvider {
                     break;
                 }
                 case "onError": {
+                    console.log(`onerror ${data.value}`);
                     if (!data.value) {
                         return;
                     }
@@ -235,8 +235,7 @@ class SidebarProvider {
         <link href="${styleMainUri}" rel="stylesheet">
         <script nonce="${nonce}">
           const tsvscode = acquireVsCodeApi();
-          const apiBaseUrl = ${JSON.stringify((0, constants_1.getApiBaseUrl)(this._environment))}
-          const environment = ${JSON.stringify(this._environment)}
+          const apiBaseUrl = ${JSON.stringify(TokenManager_1.TokenManager.getToken(TokenManager_1.API_BASE_URL))}
         </script>
 			</head>
       <body>
@@ -286,8 +285,8 @@ const vscode = __importStar(__webpack_require__(1));
 const constants_1 = __webpack_require__(4);
 const polka_1 = __importDefault(__webpack_require__(5));
 const TokenManager_1 = __webpack_require__(12);
-const authenticate = async (environment, fn) => {
-    const apiBaseUrl = (0, constants_1.getApiBaseUrl)(environment);
+const authenticate = async (fn) => {
+    const apiBaseUrl = TokenManager_1.TokenManager.getToken(TokenManager_1.API_BASE_URL);
     vscode.commands.executeCommand("vscode.open", vscode.Uri.parse(apiBaseUrl + "/auth/github"));
     const app = (0, polka_1.default)();
     app.get(`/auth/:id/:accessToken/:refreshToken`, async (req, res) => {
@@ -691,13 +690,14 @@ module.exports = function (req) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.TokenManager = exports.TOKEN_COUNT = exports.BASIC_AUTH_TOKEN = exports.USER_ID_KEY = exports.REFRESH_TOKEN_KEY = exports.ACCESS_TOKEN_KEY = void 0;
+exports.TokenManager = exports.API_BASE_URL = exports.TOKEN_COUNT = exports.BASIC_AUTH_TOKEN = exports.USER_ID_KEY = exports.REFRESH_TOKEN_KEY = exports.ACCESS_TOKEN_KEY = void 0;
 const utils_1 = __webpack_require__(13);
 exports.ACCESS_TOKEN_KEY = "dappforgeaccesstoken";
 exports.REFRESH_TOKEN_KEY = "dappforgerefreshtoken";
 exports.USER_ID_KEY = "dappforgeuserid";
 exports.BASIC_AUTH_TOKEN = "dappforgebasicauth";
 exports.TOKEN_COUNT = "dappforgetokencount";
+exports.API_BASE_URL = "dappforgetokenapibaseurl";
 class TokenManager {
     static globalState;
     static setBasicAuthToken() {
@@ -1093,9 +1093,10 @@ async function autocomplete(args) {
 exports.autocomplete = autocomplete;
 async function dappforgeAutocomplete(args) {
     const prompt = { "prefix_code": args.prefix };
-    const url = `${apiBaseUrl}/generate_code/${TokenManager_1.TokenManager.getToken(TokenManager_1.USER_ID_KEY)}`;
+    console.log(`args.prefix: ${JSON.stringify(args, undefined, 2)}`);
+    const url = `${TokenManager_1.TokenManager.getToken(TokenManager_1.API_BASE_URL)}/ai/generate_code/${TokenManager_1.TokenManager.getToken(TokenManager_1.USER_ID_KEY)}`;
     const basicAuthHeader = `Basic ${(0, utils_1.getBasicAuthToken)()}`;
-    console.log(`url: ${url} prompt: ${prompt} auth: ${basicAuthHeader}`);
+    console.log(`url: ${url} prompt: ${JSON.stringify(prompt)} auth: ${basicAuthHeader}`);
     const accessToken = TokenManager_1.TokenManager.getToken(TokenManager_1.ACCESS_TOKEN_KEY) || '';
     const refreshToken = TokenManager_1.TokenManager.getToken(TokenManager_1.REFRESH_TOKEN_KEY) || '';
     // Request
@@ -1109,14 +1110,26 @@ async function dappforgeAutocomplete(args) {
             'refresh-token': refreshToken
         }
     });
-    const data = await res.json();
     if (!res.ok || !res.body) {
         throw Error('Unable to connect to backend');
     }
+    console.log(`res.body: ${res.body}`);
+    const data = await res.json();
     console.log(`returned code: ${JSON.stringify(data, undefined, 2)}`);
-    // Trim ends of all lines since sometimes the AI completion will add extra spaces
-    //let result = data.split('\n').map((v) => v.trimEnd()).join('\n');
-    return 'some code';
+    let code = '';
+    if (data.hasOwnProperty('generated_code') && data['generated_code'].contains('completed_code')) {
+        const codeStart = data['generated_code'].indexOf('"completed_code"');
+        const jsonStr = data['generated_code'].substring(codeStart);
+        const jsonStrClean = jsonStr.replace(/}\s*"\n}\s*$/, ''); // remove trailing }" and whitespace
+        const jsonData = JSON.parse(`{${jsonStrClean}}`); // wrap in {} to form valid JSON
+        if (jsonData.hasOwnProperty('completed_code')) {
+            console.log('completed_code found');
+            // Trim ends of all lines since sometimes the AI completion will add extra spaces
+            code = jsonData['completed_code'].split('\n').map((v) => v.trimEnd()).join('\n');
+        }
+    }
+    console.log(`code: ${code}`);
+    return code;
 }
 exports.dappforgeAutocomplete = dappforgeAutocomplete;
 

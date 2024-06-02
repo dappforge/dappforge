@@ -1,6 +1,7 @@
+import { getApiBaseUrl } from '../constants';
 import { ollamaTokenGenerator } from '../modules/ollamaTokenGenerator';
 import { countSymbol } from '../modules/text';
-import { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY, TokenManager, USER_ID_KEY } from '../modules/TokenManager';
+import { ACCESS_TOKEN_KEY, API_BASE_URL, REFRESH_TOKEN_KEY, TokenManager, USER_ID_KEY } from '../modules/TokenManager';
 import { getBasicAuthToken } from '../utils';
 import { ModelFormat, adaptPrompt } from './processors/models';
 
@@ -118,9 +119,10 @@ export async function dappforgeAutocomplete(args: {
 }): Promise<string> {
 
     const prompt = {"prefix_code": args.prefix };
-    const url = `${apiBaseUrl}/generate_code/${TokenManager.getToken(USER_ID_KEY)}`;
+    console.log(`args.prefix: ${JSON.stringify(args, undefined, 2)}`);
+    const url = `${TokenManager.getToken(API_BASE_URL)}/ai/generate_code/${TokenManager.getToken(USER_ID_KEY)}`;
     const basicAuthHeader = `Basic ${getBasicAuthToken()}`;
-    console.log(`url: ${url} prompt: ${prompt} auth: ${basicAuthHeader}`);
+    console.log(`url: ${url} prompt: ${JSON.stringify(prompt)} auth: ${basicAuthHeader}`);
     const accessToken = TokenManager.getToken(ACCESS_TOKEN_KEY) || '';
     const refreshToken = TokenManager.getToken(REFRESH_TOKEN_KEY) || '';
 
@@ -135,14 +137,27 @@ export async function dappforgeAutocomplete(args: {
             'refresh-token': refreshToken
         }
     });
-    const data = await res.json();
     if (!res.ok || !res.body) {
         throw Error('Unable to connect to backend');
     }
+    console.log(`res.body: ${res.body}`);
+    const data: any = await res.json();
     console.log(`returned code: ${JSON.stringify(data, undefined, 2)}`);
 
-    // Trim ends of all lines since sometimes the AI completion will add extra spaces
-    //let result = data.split('\n').map((v) => v.trimEnd()).join('\n');
-
-    return 'some code';
+    let code = '';
+    if (data.hasOwnProperty('generated_code') && data['generated_code'].contains('completed_code')) {
+        const codeStart = data['generated_code'].indexOf('"completed_code"');
+        const jsonStr = data['generated_code'].substring(codeStart);
+        const jsonStrClean = jsonStr.replace(/}\s*"\n}\s*$/, ''); // remove trailing }" and whitespace
+        const jsonData = JSON.parse(`{${jsonStrClean}}`); // wrap in {} to form valid JSON
+    
+        if (jsonData.hasOwnProperty('completed_code')) {
+            console.log('completed_code found');
+            // Trim ends of all lines since sometimes the AI completion will add extra spaces
+            code = jsonData['completed_code'].split('\n').map((v: any) => v.trimEnd()).join('\n');
+        }
+    }
+    
+    console.log(`code: ${code}`);
+    return code;
 }
