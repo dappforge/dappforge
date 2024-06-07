@@ -813,7 +813,7 @@ class PromptProvider {
     constructor(statusbar, context) {
         this.statusbar = statusbar;
         this.context = context;
-        this._authorised = !TokenManager_1.TokenManager.loggedIn();
+        this._authorised = TokenManager_1.TokenManager.loggedIn();
         this._paused = TokenManager_1.TokenManager.getToken(TokenManager_1.AUTO_COMPLETE_ACTIVE) === 'true';
         this.update();
     }
@@ -870,6 +870,7 @@ class PromptProvider {
                 return;
             }
             console.log(`provideInlineCompletionItems:document: ${JSON.stringify(document, undefined, 2)}`);
+            console.log(`setting res at position: ${JSON.stringify(position, undefined, 2)} context: ${JSON.stringify(context, undefined, 2)}`);
             // Config
             let inferenceConfig = config_1.config.inference;
             // Ignore unsupported documents
@@ -897,6 +898,7 @@ class PromptProvider {
                 }
                 // Result
                 let res = null;
+                console.log(`prepared.prefix: ${prepared.prefix} prepared.suffix: ${prepared.suffix}`);
                 // Check if in cache
                 let cached = (0, promptCache_1.getFromPromptCache)({
                     prefix: prepared.prefix,
@@ -904,6 +906,7 @@ class PromptProvider {
                 });
                 // If not cached
                 if (cached === undefined) {
+                    console.log('not in cache');
                     // Update status
                     this.update('sync~spin', 'dAppForge');
                     try {
@@ -970,6 +973,7 @@ class PromptProvider {
                             });
                         }
                         console.log(`AI completion completed: ${res}`);
+                        console.log(`store in cache prepared.prefix: ${prepared.prefix} prepared.suffix: ${prepared.suffix} res: ${res}`);
                         // Put to cache
                         (0, promptCache_1.setPromptToCache)({
                             prefix: prepared.prefix,
@@ -992,6 +996,7 @@ class PromptProvider {
                 }
                 // Return result
                 if (res && res.trim() !== '') {
+                    console.log(`setting res at position: ${JSON.stringify(position, undefined, 2)}`);
                     return [{
                             insertText: res,
                             range: new vscode_1.default.Range(position, position),
@@ -1140,6 +1145,8 @@ async function dappforgeAutocomplete(args) {
         console.log(`generated_code: ${JSON.stringify(json, undefined, 2)}`);
         if (json && json.hasOwnProperty('completed_code')) {
             code = json.completed_code;
+            // Trim ends of all lines since sometimes the AI completion will add extra spaces
+            code = code.split('\n').map((v) => v.trimEnd()).join('\n');
             console.log(`completed_code: ${code}`);
         }
     }

@@ -152,6 +152,8 @@ export async function dappforgeAutocomplete(args: {
         console.log(`generated_code: ${JSON.stringify(json, undefined, 2)}`);
         if (json && json.hasOwnProperty('completed_code')) {
             code = json.completed_code;
+            // Trim ends of all lines since sometimes the AI completion will add extra spaces
+            code = code.split('\n').map((v) => v.trimEnd()).join('\n');
             console.log(`completed_code: ${code}`);
         }
     }

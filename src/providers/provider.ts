@@ -29,7 +29,7 @@ export class PromptProvider implements vscode.InlineCompletionItemProvider {
     ) {
         this.statusbar = statusbar;
         this.context = context;
-        this._authorised = !TokenManager.loggedIn();
+        this._authorised = TokenManager.loggedIn();
         this._paused = TokenManager.getToken(AUTO_COMPLETE_ACTIVE) === 'true';
         this.update();
     }
@@ -95,6 +95,7 @@ export class PromptProvider implements vscode.InlineCompletionItemProvider {
             }
 
             console.log(`provideInlineCompletionItems:document: ${JSON.stringify(document, undefined ,2)}`);
+            console.log(`setting res at position: ${JSON.stringify(position, undefined, 2)} context: ${JSON.stringify(context, undefined, 2)}`);
 
             // Config
             let inferenceConfig = config.inference;
@@ -130,6 +131,8 @@ export class PromptProvider implements vscode.InlineCompletionItemProvider {
                 // Result
                 let res: string | null = null;
 
+                console.log(`prepared.prefix: ${prepared.prefix} prepared.suffix: ${prepared.suffix}`);
+
                 // Check if in cache
                 let cached = getFromPromptCache({
                     prefix: prepared.prefix,
@@ -138,6 +141,7 @@ export class PromptProvider implements vscode.InlineCompletionItemProvider {
 
                 // If not cached
                 if (cached === undefined) {
+                    console.log('not in cache');
 
                     // Update status
                     this.update('sync~spin', 'dAppForge');
@@ -211,6 +215,8 @@ export class PromptProvider implements vscode.InlineCompletionItemProvider {
                         }
                         console.log(`AI completion completed: ${res}`);
 
+                        console.log(`store in cache prepared.prefix: ${prepared.prefix} prepared.suffix: ${prepared.suffix} res: ${res}`);
+
                         // Put to cache
                         setPromptToCache({
                             prefix: prepared.prefix,
@@ -232,6 +238,7 @@ export class PromptProvider implements vscode.InlineCompletionItemProvider {
 
                 // Return result
                 if (res && res.trim() !== '') {
+                    console.log(`setting res at position: ${JSON.stringify(position, undefined, 2)}`);
                     return [{
                         insertText: res,
                         range: new vscode.Range(position, position),

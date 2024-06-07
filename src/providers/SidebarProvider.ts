@@ -1,6 +1,5 @@
 import * as vscode from "vscode";
 import { authenticate } from "../modules/authenticate";
-import { getApiBaseUrl } from "../constants";
 import { getNonce } from "../getNonce";
 import { API_BASE_URL, TOKEN_COUNT, TokenManager } from "../modules/TokenManager";
 
