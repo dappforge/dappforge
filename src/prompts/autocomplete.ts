@@ -144,22 +144,12 @@ export async function dappforgeAutocomplete(args: {
     const data: any = await res.json();
     console.log(`returned code: ${JSON.stringify(data, undefined, 2)}`);
 
-    let code = '';
-    if (data.hasOwnProperty('generated_code') && 
-    data.generated_code && 
-        data.generated_code.length > 0 && data.generated_code.includes('completed_code')) {
-        const codeStart = data.generated_code.indexOf('"completed_code"');
-        const jsonStr = data.generated_code.substring(codeStart);
-        const jsonStrClean = jsonStr.replace(/}\s*"\n}\s*$/, ''); // remove trailing }" and whitespace
-        const jsonData = JSON.parse(`{${jsonStrClean}}`); // wrap in {} to form valid JSON
+    // Step 2: Extract the generated_code string
+    const generatedCodeString = data.generated_code;
+    const fixedGeneratedCodeString = generatedCodeString.replace(/'/g, '"');
+    const innerObject = JSON.parse(fixedGeneratedCodeString);
+    const completedCode = innerObject.completed_code;
     
-        if (jsonData.hasOwnProperty('completed_code') && jsonData.completed_code && jsonData.completed_code.length > 0) {
-            console.log('completed_code found');
-            // Trim ends of all lines since sometimes the AI completion will add extra spaces
-            code = jsonData.completed_code.split('\n').map((v: any) => v.trimEnd()).join('\n');
-        }
-    }
-    
-    console.log(`code: ${code}`);
-    return code;
+    console.log(`code: ${completedCode}`);
+    return completedCode;
 }

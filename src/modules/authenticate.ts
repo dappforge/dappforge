@@ -6,7 +6,6 @@ import { API_BASE_URL, TokenManager } from './TokenManager';
 
 export const authenticate = async (fn?: () => void) => {
     const apiBaseUrl = TokenManager.getToken(API_BASE_URL);
-    vscode.commands.executeCommand("vscode.open", vscode.Uri.parse(apiBaseUrl + "/auth/github"));
     const app = polka();
 
     app.get(`/auth/:id/:accessToken/:refreshToken`, async (req, res) => {

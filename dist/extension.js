@@ -290,7 +290,6 @@ const polka_1 = __importDefault(__webpack_require__(5));
 const TokenManager_1 = __webpack_require__(12);
 const authenticate = async (fn) => {
     const apiBaseUrl = TokenManager_1.TokenManager.getToken(TokenManager_1.API_BASE_URL);
-    vscode.commands.executeCommand("vscode.open", vscode.Uri.parse(apiBaseUrl + "/auth/github"));
     const app = (0, polka_1.default)();
     app.get(`/auth/:id/:accessToken/:refreshToken`, async (req, res) => {
         const { id, accessToken, refreshToken } = req.params;
@@ -327,7 +326,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.SERVER_PORT = exports.getApiBaseUrl = void 0;
 function getApiBaseUrl(environment) {
     return environment === 'dev'
-        ? "http://127.0.0.1:44151"
+        ? "http://127.0.0.1:35245"
         : "https://api.dappforge.com";
 }
 exports.getApiBaseUrl = getApiBaseUrl;
@@ -1133,22 +1132,13 @@ async function dappforgeAutocomplete(args) {
     console.log(`res.body: ${res.body}`);
     const data = await res.json();
     console.log(`returned code: ${JSON.stringify(data, undefined, 2)}`);
-    let code = '';
-    if (data.hasOwnProperty('generated_code') &&
-        data.generated_code &&
-        data.generated_code.length > 0 && data.generated_code.includes('completed_code')) {
-        const codeStart = data.generated_code.indexOf('"completed_code"');
-        const jsonStr = data.generated_code.substring(codeStart);
-        const jsonStrClean = jsonStr.replace(/}\s*"\n}\s*$/, ''); // remove trailing }" and whitespace
-        const jsonData = JSON.parse(`{${jsonStrClean}}`); // wrap in {} to form valid JSON
-        if (jsonData.hasOwnProperty('completed_code') && jsonData.completed_code && jsonData.completed_code.length > 0) {
-            console.log('completed_code found');
-            // Trim ends of all lines since sometimes the AI completion will add extra spaces
-            code = jsonData.completed_code.split('\n').map((v) => v.trimEnd()).join('\n');
-        }
-    }
-    console.log(`code: ${code}`);
-    return code;
+    // Step 2: Extract the generated_code string
+    const generatedCodeString = data.generated_code;
+    const fixedGeneratedCodeString = generatedCodeString.replace(/'/g, '"');
+    const innerObject = JSON.parse(fixedGeneratedCodeString);
+    const completedCode = innerObject.completed_code;
+    console.log(`code: ${completedCode}`);
+    return completedCode;
 }
 exports.dappforgeAutocomplete = dappforgeAutocomplete;
 
