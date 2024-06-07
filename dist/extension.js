@@ -297,7 +297,7 @@ const authenticate = async (fn) => {
             res.end(`<h1>Failed to authenticate, something went wrong</h1>`);
             return;
         }
-        await TokenManager_1.TokenManager.setTokens(id, accessToken, refreshToken);
+        TokenManager_1.TokenManager.setTokens(id, accessToken, refreshToken);
         if (fn) {
             fn();
         }
@@ -1021,6 +1021,7 @@ exports.PromptProvider = PromptProvider;
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.dappforgeAutocomplete = exports.autocomplete = void 0;
+const jsonParser_1 = __webpack_require__(33);
 const ollamaTokenGenerator_1 = __webpack_require__(17);
 const text_1 = __webpack_require__(19);
 const TokenManager_1 = __webpack_require__(12);
@@ -1132,13 +1133,18 @@ async function dappforgeAutocomplete(args) {
     console.log(`res.body: ${res.body}`);
     const data = await res.json();
     console.log(`returned code: ${JSON.stringify(data, undefined, 2)}`);
-    // Step 2: Extract the generated_code string
-    const generatedCodeString = data.generated_code;
-    const fixedGeneratedCodeString = generatedCodeString.replace(/'/g, '"');
-    const innerObject = JSON.parse(fixedGeneratedCodeString);
-    const completedCode = innerObject.completed_code;
-    console.log(`code: ${completedCode}`);
-    return completedCode;
+    let code = '';
+    if (data.hasOwnProperty('generated_code')) {
+        const parser = new jsonParser_1.JSONParser(data.generated_code);
+        const json = parser.parse();
+        console.log(`generated_code: ${JSON.stringify(json, undefined, 2)}`);
+        if (json && json.hasOwnProperty('completed_code')) {
+            code = json.completed_code;
+            console.log(`completed_code: ${code}`);
+        }
+    }
+    console.log(`code: ${code}`);
+    return code;
 }
 exports.dappforgeAutocomplete = dappforgeAutocomplete;
 
@@ -1917,6 +1923,292 @@ async function ollamaDownloadModel(endpoint, model, bearerToken) {
     }
 }
 exports.ollamaDownloadModel = ollamaDownloadModel;
+
+
+/***/ }),
+/* 33 */
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.JSONParser = void 0;
+class JSONParser {
+    pos = 0;
+    input;
+    constructor(input) {
+        this.input = input;
+    }
+    parse() {
+        this.consumeWhitespace();
+        const result = this.parseValue();
+        this.consumeWhitespace();
+        if (this.hasNext()) {
+            throw new Error(`Unexpected token at position ${this.pos}-${this.currentToken()}`);
+        }
+        return result;
+    }
+    consumeWhitespace() {
+        while (/\s/.test(this.currentToken())) {
+            this.consume();
+        }
+    }
+    hasNext() {
+        return this.currentToken() !== "";
+    }
+    currentToken() {
+        return this.input.charAt(this.pos);
+    }
+    consume(expected) {
+        if (expected && this.currentToken() !== expected) {
+            throw new Error(`Expected ${expected} at position ${this.pos}`);
+        }
+        this.pos++;
+        // Skip over any whitespace characters
+        while (this.currentToken() === " " ||
+            this.currentToken() === "\t" ||
+            this.currentToken() === "\n" ||
+            this.currentToken() === "\r") {
+            this.pos++;
+        }
+    }
+    optionalConsume(expected) {
+        if (this.currentToken() === expected) {
+            this.pos++;
+            // Skip over any whitespace characters
+            while (this.currentToken() === " " ||
+                this.currentToken() === "\t" ||
+                this.currentToken() === "\n" ||
+                this.currentToken() === "\r") {
+                this.pos++;
+            }
+            return true;
+        }
+        return false;
+    }
+    parseValue() {
+        switch (this.currentToken()) {
+            // If the current token is an opening brace, parse an object
+            case "{":
+                return this.parseObject();
+            // If the current token is an opening bracket, parse an array
+            case "[":
+                return this.parseArray();
+            // If the current token is a string literal, parse a string
+            case '"':
+                return this.parseString();
+            // If the current token is a minus sign or a digit, parse a number
+            case "-":
+            case "0":
+            case "1":
+            case "2":
+            case "3":
+            case "4":
+            case "5":
+            case "6":
+            case "7":
+            case "8":
+            case "9":
+                return this.parseNumber();
+            // If the current token is the 'true' literal, return true
+            case "t":
+                return this.parseTrue();
+            // If the current token is the 'false' literal, return false
+            case "f":
+                return this.parseFalse();
+            // If the current token is the 'null' literal, return null
+            case "n":
+                return this.parseNull();
+            // Otherwise, the JSON value is invalid
+            default:
+                throw new Error(`Invalid JSON value at position ${this.pos}`);
+        }
+    }
+    parseObject() {
+        const obj = {};
+        // Consume opening curly brace
+        this.consume("{");
+        // Parse key-value pairs
+        while (this.currentToken() !== "}") {
+            const pair = this.parsePair();
+            obj[pair.key] = pair.value;
+            // Check if there is another pair
+            if (this.currentToken() === ",") {
+                this.consume(",");
+            }
+            else if (this.currentToken() !== "}") {
+                throw new Error(`Invalid object at position ${this.pos}`);
+            }
+        }
+        // Consume closing curly brace
+        this.consume("}");
+        return obj;
+    }
+    parsePair() {
+        const key = this.parseString();
+        // Consume colon
+        this.consume(":");
+        const value = this.parseValue();
+        return { key, value };
+    }
+    parseArray() {
+        const arr = [];
+        // Consume opening square bracket
+        this.consume("[");
+        // Parse values
+        while (this.currentToken() !== "]") {
+            const value = this.parseValue();
+            arr.push(value);
+            // Check if there is another value
+            if (this.currentToken() === ",") {
+                this.consume(",");
+            }
+            else if (this.currentToken() !== "]") {
+                throw new Error(`Invalid array at position ${this.pos}`);
+            }
+        }
+        // Consume closing square bracket
+        this.consume("]");
+        return arr;
+    }
+    parseString() {
+        let str = "";
+        // Consume opening quote
+        this.consume('"');
+        // Parse string characters
+        while (this.currentToken() !== '"') {
+            if (this.currentToken() === "\\") {
+                str += this.parseEscape();
+            }
+            else {
+                str += this.currentToken();
+                this.pos++;
+            }
+        }
+        // Consume closing quote
+        this.consume('"');
+        return str;
+    }
+    parseNumber() {
+        let str = "";
+        // If the number is negative, add the minus sign to the string and consume the token
+        if (this.currentToken() === "-") {
+            str += "-";
+            this.consume("-");
+        }
+        // Parse the integer part of the number
+        str += this.parseDigits();
+        // If the number has a fractional part, parse it
+        if (this.currentToken() === ".") {
+            str += ".";
+            this.consume(".");
+            str += this.parseDigits();
+        }
+        // If the number has an exponent, parse it
+        if (this.currentToken() === "e" || this.currentToken() === "E") {
+            str += this.currentToken();
+            this.consume();
+            if (this.currentToken() === "+" || this.currentToken() === "-") {
+                str += this.currentToken();
+                this.consume();
+            }
+            str += this.parseDigits();
+        }
+        // Convert the parsed string to a number and return it
+        return parseFloat(str);
+    }
+    parseDigits() {
+        let str = "";
+        // If the first digit is zero, add it to the string and consume the token
+        if (this.currentToken() === "0") {
+            str += this.currentToken();
+            this.consume();
+        }
+        // If the first digit is between 1 and 9, parse the rest of the digits
+        else if (this.currentToken() >= "1" && this.currentToken() <= "9") {
+            str += this.currentToken();
+            this.consume();
+            while (this.currentToken() >= "0" && this.currentToken() <= "9") {
+                str += this.currentToken();
+                this.consume();
+            }
+        }
+        // Otherwise, the JSON number is invalid
+        else {
+            throw new Error(`Invalid JSON number at position ${this.pos}`);
+        }
+        // Return the parsed string of digits
+        return str;
+    }
+    parseEscape() {
+        // Consume the backslash
+        this.consume("\\");
+        switch (this.currentToken()) {
+            // If the escape sequence is a double quote, backslash, or forward slash, return the corresponding character
+            case '"':
+            case "\\":
+            case "/":
+                const c = this.currentToken();
+                this.consume();
+                return c;
+            // If the escape sequence is a backspace, return the corresponding character
+            case "b":
+                this.consume();
+                return "\b";
+            // If the escape sequence is a form feed, return the corresponding character
+            case "f":
+                this.consume();
+                return "\f";
+            // If the escape sequence is a newline, return the corresponding character
+            case "n":
+                this.consume();
+                return "\n";
+            // If the escape sequence is a carriage return, return the corresponding character
+            case "r":
+                this.consume();
+                return "\r";
+            // If the escape sequence is a tab, return the corresponding character
+            case "t":
+                this.consume();
+                return "\t";
+            // If the escape sequence is a Unicode code point, parse it and return the corresponding character
+            case "u":
+                this.consume();
+                const code = parseInt(this.input.substr(this.pos, 4), 16);
+                if (isNaN(code)) {
+                    throw new Error(`Invalid Unicode escape sequence at position ${this.pos}`);
+                }
+                this.pos += 4;
+                return String.fromCharCode(code);
+            // Otherwise, the JSON escape sequence is invalid
+            default:
+                throw new Error(`Invalid escape sequence at position ${this.pos}`);
+        }
+    }
+    parseTrue() {
+        this.consume("t");
+        this.consume("r");
+        this.consume("u");
+        this.consume("e");
+        return true;
+    }
+    parseFalse() {
+        this.consume("f");
+        this.consume("a");
+        this.consume("l");
+        this.consume("s");
+        this.consume("e");
+        return false;
+    }
+    parseNull() {
+        this.consume("n");
+        this.consume("u");
+        this.consume("l");
+        this.consume("l");
+        return null;
+    }
+}
+exports.JSONParser = JSONParser;
 
 
 /***/ })

@@ -1,4 +1,5 @@
 import { getApiBaseUrl } from '../constants';
+import { JSONParser } from '../modules/jsonParser';
 import { ollamaTokenGenerator } from '../modules/ollamaTokenGenerator';
 import { countSymbol } from '../modules/text';
 import { ACCESS_TOKEN_KEY, API_BASE_URL, REFRESH_TOKEN_KEY, TokenManager, USER_ID_KEY } from '../modules/TokenManager';
@@ -144,12 +145,16 @@ export async function dappforgeAutocomplete(args: {
     const data: any = await res.json();
     console.log(`returned code: ${JSON.stringify(data, undefined, 2)}`);
 
-    // Step 2: Extract the generated_code string
-    const generatedCodeString = data.generated_code;
-    const fixedGeneratedCodeString = generatedCodeString.replace(/'/g, '"');
-    const innerObject = JSON.parse(fixedGeneratedCodeString);
-    const completedCode = innerObject.completed_code;
-    
-    console.log(`code: ${completedCode}`);
-    return completedCode;
+    let code: string = '';
+    if (data.hasOwnProperty('generated_code')) {
+        const parser = new JSONParser(data.generated_code);
+        const json: any = parser.parse();
+        console.log(`generated_code: ${JSON.stringify(json, undefined, 2)}`);
+        if (json && json.hasOwnProperty('completed_code')) {
+            code = json.completed_code;
+            console.log(`completed_code: ${code}`);
+        }
+    }
+    console.log(`code: ${code}`);
+    return code;
 }

@@ -14,7 +14,7 @@ export const authenticate = async (fn?: () => void) => {
             res.end(`<h1>Failed to authenticate, something went wrong</h1>`);
             return;
         }
-        await TokenManager.setTokens(id, accessToken, refreshToken);
+        TokenManager.setTokens(id, accessToken, refreshToken);
         if (fn) { fn(); }
   
         res.end(`<h1>dAppForge authentication was successful, you can close this now</h1>`);
