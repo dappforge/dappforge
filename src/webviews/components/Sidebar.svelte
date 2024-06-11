@@ -8,8 +8,16 @@
 
   onMount(async () => {
     window.addEventListener("message", async (event) => {
+      console.log(`abababababa----> ${JSON.stringify(event, undefined, 2)}`);
       const message = event.data;
       switch (message.type) {
+        case "completion-accepted":
+          console.log(
+            "xyxyxyxyxyxyxyxyxyxyxyx-------------->completion-accepted"
+          );
+        //if (user && user.tokenCount > 0) {
+        //  user.tokenCount -= 1;
+        // }
         case "token":
           const tokens = JSON.parse(message.value);
           if (tokens.userId && tokens.userId !== "") {

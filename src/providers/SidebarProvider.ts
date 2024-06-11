@@ -9,6 +9,10 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
 
   constructor(private readonly _extensionUri: vscode.Uri) {}
 
+  public postMessageToWebview(message: any) {
+    // Post message to webview
+    this._view?.webview.postMessage(message);
+  }
   public resolveWebviewView(webviewView: vscode.WebviewView) {
     this._view = webviewView;
 
@@ -22,6 +26,7 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
     webviewView.webview.html = this._getHtmlForWebview(webviewView.webview);
 
     webviewView.webview.onDidReceiveMessage(async (data) => {
+      console.log(`---><><> onDidReceiveMessage ${JSON.stringify(data, undefined, 2)}`);
       switch (data.type) {
         case "logout": {
           TokenManager.resetTokens();

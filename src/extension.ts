@@ -5,7 +5,7 @@ import { SidebarProvider } from './providers/SidebarProvider';
 import { authenticate } from './modules/authenticate';
 import { API_BASE_URL, TokenManager, USER_ID_KEY } from './modules/TokenManager';
 import { PromptProvider } from './providers/provider';
-import { getApiBaseUrl } from './constants';
+import { getApiBaseUrl, INLINE_COMPLETION_ACCEPTED_COMMAND } from './constants';
 
 // This method is called when your extension is activated
 // Your extension is activated the very first time the command is executed
@@ -78,7 +78,14 @@ export function activate(context: vscode.ExtensionContext) {
 		  	);
 		})
 	);
-	
+
+	context.subscriptions.push(
+		vscode.commands.registerCommand(INLINE_COMPLETION_ACCEPTED_COMMAND, () => {
+			vscode.window.showInformationMessage('Inline completion accepted!');
+			// Call webview to decrement token count
+			sidebarProvider.postMessageToWebview({ type: "completion-accepted", value: 1 });
+		})
+	);
 }
 
 // This method is called when your extension is deactivated

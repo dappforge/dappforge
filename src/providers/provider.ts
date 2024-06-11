@@ -8,6 +8,7 @@ import { ollamaCheckModel } from '../modules/ollamaCheckModel';
 import { ollamaDownloadModel } from '../modules/ollamaDownloadModel';
 import { config } from '../config';
 import { ACCESS_TOKEN_KEY, AUTO_COMPLETE_ACTIVE, TokenManager } from '../modules/TokenManager';
+import { INLINE_COMPLETION_ACCEPTED_COMMAND } from '../constants';
 
 type Status = {
     icon: string;
@@ -239,10 +240,18 @@ export class PromptProvider implements vscode.InlineCompletionItemProvider {
                 // Return result
                 if (res && res.trim() !== '') {
                     console.log(`setting res at position: ${JSON.stringify(position, undefined, 2)}`);
-                    return [{
-                        insertText: res,
-                        range: new vscode.Range(position, position),
-                    }];
+                    const completionItems: vscode.InlineCompletionItem[] = [];
+                    const completionItem = new vscode.InlineCompletionItem(res, new vscode.Range(position, position));
+        
+                    // Attach the command to the completion item so we can detect when its been accepted
+                    completionItem.command = {
+                        command: INLINE_COMPLETION_ACCEPTED_COMMAND,
+                        title: 'Inline Completion Accepted'
+                    };
+        
+                    completionItems.push(completionItem);
+        
+                    return completionItems;
                 }
 
                 // Nothing to complete

@@ -5,3 +5,4 @@ export function getApiBaseUrl(environment: string): string {
   }
 
 export const SERVER_PORT = 54021;
+export const INLINE_COMPLETION_ACCEPTED_COMMAND = 'dappforge.InlineCompletionAccepted';
