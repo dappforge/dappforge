@@ -94,9 +94,9 @@ function activate(context) {
         await vscode.commands.executeCommand("workbench.view.extension.dappforge-sidebar-view");
     }));
     context.subscriptions.push(vscode.commands.registerCommand(constants_1.INLINE_COMPLETION_ACCEPTED_COMMAND, () => {
-        vscode.window.showInformationMessage('Inline completion accepted!');
+        //vscode.window.showInformationMessage('Inline completion accepted!');
         // Call webview to decrement token count
-        sidebarProvider.postMessageToWebview({ type: "completion-accepted", value: 1 });
+        const tokenCount = provider.completionAccepted(sidebarProvider, 1);
     }));
 }
 exports.activate = activate;
@@ -1025,10 +1025,45 @@ class PromptProvider {
         }
         catch (e) {
             console.log('Error during inference:', e);
-            tsvscode.postMessage({
-                type: "onError",
-                value: `Error during inference: ${e.message}`,
-            });
+            vscode_1.default.window.showErrorMessage(e.message);
+        }
+    }
+    async completionAccepted(sidebarProvider, cost) {
+        if (TokenManager_1.TokenManager.loggedIn() && !this.paused) {
+            console.log("Call endpoint to reduce count");
+            try {
+                let res = await fetch(`${TokenManager_1.TokenManager.getToken(TokenManager_1.API_BASE_URL)}/ai/reduce_token_count/${TokenManager_1.TokenManager.getToken(TokenManager_1.USER_ID_KEY)}`, {
+                    method: "POST",
+                    body: JSON.stringify({ cost: cost }),
+                    headers: {
+                        authorization: `Basic ${TokenManager_1.TokenManager.getToken(TokenManager_1.BASIC_AUTH_TOKEN)}`,
+                        "Content-Type": "application/json",
+                        "access-token": TokenManager_1.TokenManager.getToken(TokenManager_1.ACCESS_TOKEN_KEY) || '',
+                        "refresh-token": TokenManager_1.TokenManager.getToken(TokenManager_1.REFRESH_TOKEN_KEY) || ''
+                    },
+                });
+                if (!res.ok || !res.body) {
+                    throw Error("Unable to connect to backend");
+                }
+                console.log(`res.body: ${res.body}`);
+                const json = await res.json();
+                console.log(`returned code: ${JSON.stringify(json, undefined, 2)}`);
+                TokenManager_1.TokenManager.setToken(TokenManager_1.TOKEN_COUNT, String(json.tokenCount));
+                if (json.tokenCount <= 0) {
+                    vscode_1.default.commands.executeCommand('dappforge.unauthorised');
+                }
+                else {
+                    vscode_1.default.commands.executeCommand('dappforge.authorised');
+                }
+                sidebarProvider.postMessageToWebview({
+                    type: "update-token-count",
+                    value: json.tokenCount
+                });
+            }
+            catch (e) {
+                console.log('Error when trying to charge for the AI completion:', e);
+                vscode_1.default.window.showErrorMessage(e.message);
+            }
         }
     }
 }

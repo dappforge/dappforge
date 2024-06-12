@@ -13,6 +13,7 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
     // Post message to webview
     this._view?.webview.postMessage(message);
   }
+  
   public resolveWebviewView(webviewView: vscode.WebviewView) {
     this._view = webviewView;
 

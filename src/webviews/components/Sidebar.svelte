@@ -8,18 +8,15 @@
 
   onMount(async () => {
     window.addEventListener("message", async (event) => {
-      console.log(`abababababa----> ${JSON.stringify(event, undefined, 2)}`);
       const message = event.data;
+      let tokens = null;
       switch (message.type) {
-        case "completion-accepted":
-          console.log(
-            "xyxyxyxyxyxyxyxyxyxyxyx-------------->completion-accepted"
-          );
-        //if (user && user.tokenCount > 0) {
-        //  user.tokenCount -= 1;
-        // }
+        case "update-token-count":
+          if (user) user.tokenCount = message.value;
+          tsvscode.postMessage({ type: "logged-in-out", value: user });
+          break;
         case "token":
-          const tokens = JSON.parse(message.value);
+          tokens = JSON.parse(message.value);
           if (tokens.userId && tokens.userId !== "") {
             try {
               const response = await fetch(
@@ -48,6 +45,7 @@
           }
           loading = false;
           tsvscode.postMessage({ type: "logged-in-out", value: user });
+          break;
       }
     });
 

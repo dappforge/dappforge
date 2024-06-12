@@ -81,9 +81,9 @@ export function activate(context: vscode.ExtensionContext) {
 
 	context.subscriptions.push(
 		vscode.commands.registerCommand(INLINE_COMPLETION_ACCEPTED_COMMAND, () => {
-			vscode.window.showInformationMessage('Inline completion accepted!');
+			//vscode.window.showInformationMessage('Inline completion accepted!');
 			// Call webview to decrement token count
-			sidebarProvider.postMessageToWebview({ type: "completion-accepted", value: 1 });
+			const tokenCount = provider.completionAccepted(sidebarProvider, 1);
 		})
 	);
 }

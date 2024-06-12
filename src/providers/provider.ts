@@ -7,8 +7,9 @@ import { isNotNeeded, isSupported } from '../prompts/filter';
 import { ollamaCheckModel } from '../modules/ollamaCheckModel';
 import { ollamaDownloadModel } from '../modules/ollamaDownloadModel';
 import { config } from '../config';
-import { ACCESS_TOKEN_KEY, AUTO_COMPLETE_ACTIVE, TokenManager } from '../modules/TokenManager';
+import { ACCESS_TOKEN_KEY, API_BASE_URL, AUTO_COMPLETE_ACTIVE, BASIC_AUTH_TOKEN, REFRESH_TOKEN_KEY, TOKEN_COUNT, TokenManager, USER_ID_KEY } from '../modules/TokenManager';
 import { INLINE_COMPLETION_ACCEPTED_COMMAND } from '../constants';
+import { SidebarProvider } from './SidebarProvider';
 
 type Status = {
     icon: string;
@@ -259,10 +260,49 @@ export class PromptProvider implements vscode.InlineCompletionItemProvider {
             });
         } catch (e) {
             console.log('Error during inference:', e);
-            tsvscode.postMessage({
-                type: "onError",
-                value: `Error during inference: ${(e as Error).message}`,
-              });
+            vscode.window.showErrorMessage((e as Error).message);
+        }
+    }
+
+    async completionAccepted(sidebarProvider: SidebarProvider, cost: number) {
+        if (TokenManager.loggedIn() && !this.paused) {
+            console.log("Call endpoint to reduce count");
+            try {
+                let res = await fetch(
+                `${TokenManager.getToken(API_BASE_URL)}/ai/reduce_token_count/${TokenManager.getToken(USER_ID_KEY)}`,
+                {
+                    method: "POST",
+                    body: JSON.stringify({ cost: cost }),
+                    headers: {
+                    authorization: `Basic ${TokenManager.getToken(BASIC_AUTH_TOKEN)}`,
+                    "Content-Type": "application/json",
+                    "access-token": TokenManager.getToken(ACCESS_TOKEN_KEY) || '',
+                    "refresh-token": TokenManager.getToken(REFRESH_TOKEN_KEY) || ''
+                    },
+                }
+                );
+                if (!res.ok || !res.body) {
+                throw Error("Unable to connect to backend");
+                }
+                console.log(`res.body: ${res.body}`);
+                const json: any = await res.json();
+                console.log(
+                `returned code: ${JSON.stringify(json, undefined, 2)}`
+                );
+                TokenManager.setToken(TOKEN_COUNT, String(json.tokenCount));
+                if (json.tokenCount <= 0) {
+                    vscode.commands.executeCommand('dappforge.unauthorised');
+                } else {
+                    vscode.commands.executeCommand('dappforge.authorised');
+                }
+                sidebarProvider.postMessageToWebview({ 
+                    type: "update-token-count", 
+                    value: json.tokenCount });
+    
+            } catch (e) {
+                console.log('Error when trying to charge for the AI completion:', e);
+                vscode.window.showErrorMessage((e as Error).message);
+            }
         }
     }
 }
