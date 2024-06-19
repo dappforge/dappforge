@@ -139,7 +139,25 @@ export async function dappforgeAutocomplete(args: {
         }
     });
     if (!res.ok || !res.body) {
+        if (res.body) {
+            let detail: string = '';
+            const data: any = await res.json();
+            console.log(`completed_code: ${JSON.stringify(data, undefined, 2)}`);
+            if (data.hasOwnProperty('detail')) {  
+                detail = data.detail;
+            }
+            throw Error(`Error when trying to query the AI, status: ${res.status} error: ${detail}`);            
+        }
         throw Error('Unable to connect to backend');
+    } 
+    if (res.status !== 200) {
+        let detail: string = '';
+        const data: any = await res.json();
+        console.log(`completed_code: ${JSON.stringify(data, undefined, 2)}`);
+        if (data.hasOwnProperty('detail')) {  
+            detail = data.detail;
+        }
+        throw Error(`Error when trying to query the AI, status: ${res.status} error: ${detail}`);
     }
     console.log(`res.body: ${res.body}`);
     const data: any = await res.json();
@@ -147,15 +165,10 @@ export async function dappforgeAutocomplete(args: {
 
     let code: string = '';
     if (data.hasOwnProperty('generated_code')) {
-        const parser = new JSONParser(data.generated_code);
-        const json: any = parser.parse();
-        console.log(`generated_code: ${JSON.stringify(json, undefined, 2)}`);
-        if (json && json.hasOwnProperty('completed_code')) {
-            code = json.completed_code;
-            // Trim ends of all lines since sometimes the AI completion will add extra spaces
-            code = code.split('\n').map((v) => v.trimEnd()).join('\n');
-            console.log(`completed_code: ${code}`);
-        }
+        code = data.generated_code;
+        // Trim ends of all lines since sometimes the AI completion will add extra spaces
+        code = code.split('\n').map((v) => v.trimEnd()).join('\n');
+        console.log(`completed_code: ${code}`);
     }
     console.log(`code: ${code}`);
     return code;

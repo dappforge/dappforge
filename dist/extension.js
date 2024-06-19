@@ -337,7 +337,7 @@ exports.INLINE_COMPLETION_ACCEPTED_COMMAND = exports.SERVER_PORT = exports.getAp
 function getApiBaseUrl(environment) {
     return environment === 'dev'
         ? "http://127.0.0.1:35245"
-        : "https://api.dappforge.com";
+        : "https://isgro6sam3.execute-api.us-east-1.amazonaws.com/prod";
 }
 exports.getApiBaseUrl = getApiBaseUrl;
 exports.SERVER_PORT = 54021;
@@ -806,13 +806,13 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.PromptProvider = void 0;
 const vscode_1 = __importDefault(__webpack_require__(1));
 const autocomplete_1 = __webpack_require__(16);
-const preparePrompt_1 = __webpack_require__(22);
-const lock_1 = __webpack_require__(29);
-const promptCache_1 = __webpack_require__(30);
-const filter_1 = __webpack_require__(31);
-const ollamaCheckModel_1 = __webpack_require__(32);
-const ollamaDownloadModel_1 = __webpack_require__(33);
-const config_1 = __webpack_require__(28);
+const preparePrompt_1 = __webpack_require__(21);
+const lock_1 = __webpack_require__(28);
+const promptCache_1 = __webpack_require__(29);
+const filter_1 = __webpack_require__(30);
+const ollamaCheckModel_1 = __webpack_require__(31);
+const ollamaDownloadModel_1 = __webpack_require__(32);
+const config_1 = __webpack_require__(27);
 const TokenManager_1 = __webpack_require__(12);
 const constants_1 = __webpack_require__(4);
 class PromptProvider {
@@ -1078,12 +1078,11 @@ exports.PromptProvider = PromptProvider;
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.dappforgeAutocomplete = exports.autocomplete = void 0;
-const jsonParser_1 = __webpack_require__(17);
-const ollamaTokenGenerator_1 = __webpack_require__(18);
-const text_1 = __webpack_require__(20);
+const ollamaTokenGenerator_1 = __webpack_require__(17);
+const text_1 = __webpack_require__(19);
 const TokenManager_1 = __webpack_require__(12);
 const utils_1 = __webpack_require__(13);
-const models_1 = __webpack_require__(21);
+const models_1 = __webpack_require__(20);
 async function autocomplete(args) {
     let prompt = (0, models_1.adaptPrompt)({ prefix: args.prefix, suffix: args.suffix, format: args.format });
     // Calculate arguments
@@ -1185,22 +1184,35 @@ async function dappforgeAutocomplete(args) {
         }
     });
     if (!res.ok || !res.body) {
+        if (res.body) {
+            let detail = '';
+            const data = await res.json();
+            console.log(`completed_code: ${JSON.stringify(data, undefined, 2)}`);
+            if (data.hasOwnProperty('detail')) {
+                detail = data.detail;
+            }
+            throw Error(`Error when trying to query the AI, status: ${res.status} error: ${detail}`);
+        }
         throw Error('Unable to connect to backend');
+    }
+    if (res.status !== 200) {
+        let detail = '';
+        const data = await res.json();
+        console.log(`completed_code: ${JSON.stringify(data, undefined, 2)}`);
+        if (data.hasOwnProperty('detail')) {
+            detail = data.detail;
+        }
+        throw Error(`Error when trying to query the AI, status: ${res.status} error: ${detail}`);
     }
     console.log(`res.body: ${res.body}`);
     const data = await res.json();
     console.log(`returned code: ${JSON.stringify(data, undefined, 2)}`);
     let code = '';
     if (data.hasOwnProperty('generated_code')) {
-        const parser = new jsonParser_1.JSONParser(data.generated_code);
-        const json = parser.parse();
-        console.log(`generated_code: ${JSON.stringify(json, undefined, 2)}`);
-        if (json && json.hasOwnProperty('completed_code')) {
-            code = json.completed_code;
-            // Trim ends of all lines since sometimes the AI completion will add extra spaces
-            code = code.split('\n').map((v) => v.trimEnd()).join('\n');
-            console.log(`completed_code: ${code}`);
-        }
+        code = data.generated_code;
+        // Trim ends of all lines since sometimes the AI completion will add extra spaces
+        code = code.split('\n').map((v) => v.trimEnd()).join('\n');
+        console.log(`completed_code: ${code}`);
     }
     console.log(`code: ${code}`);
     return code;
@@ -1210,299 +1222,13 @@ exports.dappforgeAutocomplete = dappforgeAutocomplete;
 
 /***/ }),
 /* 17 */
-/***/ ((__unused_webpack_module, exports) => {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.JSONParser = void 0;
-class JSONParser {
-    pos = 0;
-    input;
-    constructor(input) {
-        this.input = input;
-    }
-    parse() {
-        this.consumeWhitespace();
-        const result = this.parseValue();
-        this.consumeWhitespace();
-        if (this.hasNext()) {
-            throw new Error(`Unexpected token at position ${this.pos}-${this.currentToken()}`);
-        }
-        return result;
-    }
-    consumeWhitespace() {
-        while (/\s/.test(this.currentToken())) {
-            this.consume();
-        }
-    }
-    hasNext() {
-        return this.currentToken() !== "";
-    }
-    currentToken() {
-        return this.input.charAt(this.pos);
-    }
-    consume(expected) {
-        if (expected && this.currentToken() !== expected) {
-            throw new Error(`Expected ${expected} at position ${this.pos}`);
-        }
-        this.pos++;
-        // Skip over any whitespace characters
-        while (this.currentToken() === " " ||
-            this.currentToken() === "\t" ||
-            this.currentToken() === "\n" ||
-            this.currentToken() === "\r") {
-            this.pos++;
-        }
-    }
-    optionalConsume(expected) {
-        if (this.currentToken() === expected) {
-            this.pos++;
-            // Skip over any whitespace characters
-            while (this.currentToken() === " " ||
-                this.currentToken() === "\t" ||
-                this.currentToken() === "\n" ||
-                this.currentToken() === "\r") {
-                this.pos++;
-            }
-            return true;
-        }
-        return false;
-    }
-    parseValue() {
-        switch (this.currentToken()) {
-            // If the current token is an opening brace, parse an object
-            case "{":
-                return this.parseObject();
-            // If the current token is an opening bracket, parse an array
-            case "[":
-                return this.parseArray();
-            // If the current token is a string literal, parse a string
-            case '"':
-                return this.parseString();
-            // If the current token is a minus sign or a digit, parse a number
-            case "-":
-            case "0":
-            case "1":
-            case "2":
-            case "3":
-            case "4":
-            case "5":
-            case "6":
-            case "7":
-            case "8":
-            case "9":
-                return this.parseNumber();
-            // If the current token is the 'true' literal, return true
-            case "t":
-                return this.parseTrue();
-            // If the current token is the 'false' literal, return false
-            case "f":
-                return this.parseFalse();
-            // If the current token is the 'null' literal, return null
-            case "n":
-                return this.parseNull();
-            // Otherwise, the JSON value is invalid
-            default:
-                throw new Error(`Invalid JSON value at position ${this.pos}`);
-        }
-    }
-    parseObject() {
-        const obj = {};
-        // Consume opening curly brace
-        this.consume("{");
-        // Parse key-value pairs
-        while (this.currentToken() !== "}") {
-            const pair = this.parsePair();
-            obj[pair.key] = pair.value;
-            // Check if there is another pair
-            if (this.currentToken() === ",") {
-                this.consume(",");
-            }
-            else if (this.currentToken() !== "}") {
-                throw new Error(`Invalid object at position ${this.pos}`);
-            }
-        }
-        // Consume closing curly brace
-        this.consume("}");
-        return obj;
-    }
-    parsePair() {
-        const key = this.parseString();
-        // Consume colon
-        this.consume(":");
-        const value = this.parseValue();
-        return { key, value };
-    }
-    parseArray() {
-        const arr = [];
-        // Consume opening square bracket
-        this.consume("[");
-        // Parse values
-        while (this.currentToken() !== "]") {
-            const value = this.parseValue();
-            arr.push(value);
-            // Check if there is another value
-            if (this.currentToken() === ",") {
-                this.consume(",");
-            }
-            else if (this.currentToken() !== "]") {
-                throw new Error(`Invalid array at position ${this.pos}`);
-            }
-        }
-        // Consume closing square bracket
-        this.consume("]");
-        return arr;
-    }
-    parseString() {
-        let str = "";
-        // Consume opening quote
-        this.consume('"');
-        // Parse string characters
-        while (this.currentToken() !== '"') {
-            if (this.currentToken() === "\\") {
-                str += this.parseEscape();
-            }
-            else {
-                str += this.currentToken();
-                this.pos++;
-            }
-        }
-        // Consume closing quote
-        this.consume('"');
-        return str;
-    }
-    parseNumber() {
-        let str = "";
-        // If the number is negative, add the minus sign to the string and consume the token
-        if (this.currentToken() === "-") {
-            str += "-";
-            this.consume("-");
-        }
-        // Parse the integer part of the number
-        str += this.parseDigits();
-        // If the number has a fractional part, parse it
-        if (this.currentToken() === ".") {
-            str += ".";
-            this.consume(".");
-            str += this.parseDigits();
-        }
-        // If the number has an exponent, parse it
-        if (this.currentToken() === "e" || this.currentToken() === "E") {
-            str += this.currentToken();
-            this.consume();
-            if (this.currentToken() === "+" || this.currentToken() === "-") {
-                str += this.currentToken();
-                this.consume();
-            }
-            str += this.parseDigits();
-        }
-        // Convert the parsed string to a number and return it
-        return parseFloat(str);
-    }
-    parseDigits() {
-        let str = "";
-        // If the first digit is zero, add it to the string and consume the token
-        if (this.currentToken() === "0") {
-            str += this.currentToken();
-            this.consume();
-        }
-        // If the first digit is between 1 and 9, parse the rest of the digits
-        else if (this.currentToken() >= "1" && this.currentToken() <= "9") {
-            str += this.currentToken();
-            this.consume();
-            while (this.currentToken() >= "0" && this.currentToken() <= "9") {
-                str += this.currentToken();
-                this.consume();
-            }
-        }
-        // Otherwise, the JSON number is invalid
-        else {
-            throw new Error(`Invalid JSON number at position ${this.pos}`);
-        }
-        // Return the parsed string of digits
-        return str;
-    }
-    parseEscape() {
-        // Consume the backslash
-        this.consume("\\");
-        switch (this.currentToken()) {
-            // If the escape sequence is a double quote, backslash, or forward slash, return the corresponding character
-            case '"':
-            case "\\":
-            case "/":
-                const c = this.currentToken();
-                this.consume();
-                return c;
-            // If the escape sequence is a backspace, return the corresponding character
-            case "b":
-                this.consume();
-                return "\b";
-            // If the escape sequence is a form feed, return the corresponding character
-            case "f":
-                this.consume();
-                return "\f";
-            // If the escape sequence is a newline, return the corresponding character
-            case "n":
-                this.consume();
-                return "\n";
-            // If the escape sequence is a carriage return, return the corresponding character
-            case "r":
-                this.consume();
-                return "\r";
-            // If the escape sequence is a tab, return the corresponding character
-            case "t":
-                this.consume();
-                return "\t";
-            // If the escape sequence is a Unicode code point, parse it and return the corresponding character
-            case "u":
-                this.consume();
-                const code = parseInt(this.input.substr(this.pos, 4), 16);
-                if (isNaN(code)) {
-                    throw new Error(`Invalid Unicode escape sequence at position ${this.pos}`);
-                }
-                this.pos += 4;
-                return String.fromCharCode(code);
-            // Otherwise, the JSON escape sequence is invalid
-            default:
-                throw new Error(`Invalid escape sequence at position ${this.pos}`);
-        }
-    }
-    parseTrue() {
-        this.consume("t");
-        this.consume("r");
-        this.consume("u");
-        this.consume("e");
-        return true;
-    }
-    parseFalse() {
-        this.consume("f");
-        this.consume("a");
-        this.consume("l");
-        this.consume("s");
-        this.consume("e");
-        return false;
-    }
-    parseNull() {
-        this.consume("n");
-        this.consume("u");
-        this.consume("l");
-        this.consume("l");
-        return null;
-    }
-}
-exports.JSONParser = JSONParser;
-
-
-/***/ }),
-/* 18 */
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.ollamaTokenGenerator = void 0;
-const lineGenerator_1 = __webpack_require__(19);
+const lineGenerator_1 = __webpack_require__(18);
 async function* ollamaTokenGenerator(url, data, bearerToken) {
     for await (let line of (0, lineGenerator_1.lineGenerator)(url, data, bearerToken)) {
         console.log('Receive line: ' + line);
@@ -1521,7 +1247,7 @@ exports.ollamaTokenGenerator = ollamaTokenGenerator;
 
 
 /***/ }),
-/* 19 */
+/* 18 */
 /***/ ((__unused_webpack_module, exports) => {
 
 "use strict";
@@ -1583,7 +1309,7 @@ exports.lineGenerator = lineGenerator;
 
 
 /***/ }),
-/* 20 */
+/* 19 */
 /***/ ((__unused_webpack_module, exports) => {
 
 "use strict";
@@ -1656,7 +1382,7 @@ exports.countSymbol = countSymbol;
 
 
 /***/ }),
-/* 21 */
+/* 20 */
 /***/ ((__unused_webpack_module, exports) => {
 
 "use strict";
@@ -1695,7 +1421,7 @@ exports.adaptPrompt = adaptPrompt;
 
 
 /***/ }),
-/* 22 */
+/* 21 */
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 "use strict";
@@ -1706,10 +1432,10 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.preparePrompt = void 0;
 const vscode_1 = __importDefault(__webpack_require__(1));
-const detectLanguage_1 = __webpack_require__(23);
-const fileHeaders_1 = __webpack_require__(26);
-const languages_1 = __webpack_require__(25);
-const config_1 = __webpack_require__(28);
+const detectLanguage_1 = __webpack_require__(22);
+const fileHeaders_1 = __webpack_require__(25);
+const languages_1 = __webpack_require__(24);
+const config_1 = __webpack_require__(27);
 var decoder = new TextDecoder("utf8");
 function getNotebookDocument(document) {
     return vscode_1.default.workspace.notebookDocuments
@@ -1802,7 +1528,7 @@ exports.preparePrompt = preparePrompt;
 
 
 /***/ }),
-/* 23 */
+/* 22 */
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 "use strict";
@@ -1812,8 +1538,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.detectLanguage = void 0;
-const path_1 = __importDefault(__webpack_require__(24));
-const languages_1 = __webpack_require__(25);
+const path_1 = __importDefault(__webpack_require__(23));
+const languages_1 = __webpack_require__(24);
 let aliases = {
     'typescriptreact': 'typescript',
     'javascriptreact': 'javascript',
@@ -1847,14 +1573,14 @@ exports.detectLanguage = detectLanguage;
 
 
 /***/ }),
-/* 24 */
+/* 23 */
 /***/ ((module) => {
 
 "use strict";
 module.exports = require("path");
 
 /***/ }),
-/* 25 */
+/* 24 */
 /***/ ((__unused_webpack_module, exports) => {
 
 "use strict";
@@ -1972,14 +1698,14 @@ exports.languages = {
 
 
 /***/ }),
-/* 26 */
+/* 25 */
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.fileHeaders = void 0;
-const comment_1 = __webpack_require__(27);
+const comment_1 = __webpack_require__(26);
 function fileHeaders(content, uri, language) {
     let res = content;
     if (language) {
@@ -2000,7 +1726,7 @@ exports.fileHeaders = fileHeaders;
 
 
 /***/ }),
-/* 27 */
+/* 26 */
 /***/ ((__unused_webpack_module, exports) => {
 
 "use strict";
@@ -2022,7 +1748,7 @@ exports.comment = comment;
 
 
 /***/ }),
-/* 28 */
+/* 27 */
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 "use strict";
@@ -2103,7 +1829,7 @@ exports.config = new Config();
 
 
 /***/ }),
-/* 29 */
+/* 28 */
 /***/ ((__unused_webpack_module, exports) => {
 
 "use strict";
@@ -2152,7 +1878,7 @@ exports.AsyncLock = AsyncLock;
 
 
 /***/ }),
-/* 30 */
+/* 29 */
 /***/ ((__unused_webpack_module, exports) => {
 
 "use strict";
@@ -2188,7 +1914,7 @@ exports.setPromptToCache = setPromptToCache;
 
 
 /***/ }),
-/* 31 */
+/* 30 */
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 "use strict";
@@ -2198,7 +1924,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.isNotNeeded = exports.isSupported = void 0;
-const path_1 = __importDefault(__webpack_require__(24));
+const path_1 = __importDefault(__webpack_require__(23));
 function isSupported(doc, aiProvider) {
     return (doc.uri.scheme === 'file' ||
         doc.uri.scheme === 'vscode-notebook-cell' ||
@@ -2222,7 +1948,7 @@ exports.isNotNeeded = isNotNeeded;
 
 
 /***/ }),
-/* 32 */
+/* 31 */
 /***/ ((__unused_webpack_module, exports) => {
 
 "use strict";
@@ -2253,14 +1979,14 @@ exports.ollamaCheckModel = ollamaCheckModel;
 
 
 /***/ }),
-/* 33 */
+/* 32 */
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.ollamaDownloadModel = void 0;
-const lineGenerator_1 = __webpack_require__(19);
+const lineGenerator_1 = __webpack_require__(18);
 async function ollamaDownloadModel(endpoint, model, bearerToken) {
     console.log('Downloading model from ollama: ' + model);
     for await (let line of (0, lineGenerator_1.lineGenerator)(endpoint + '/api/pull', { name: model }, bearerToken)) {
