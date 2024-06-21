@@ -342,7 +342,7 @@ exports.INLINE_COMPLETION_ACCEPTED_COMMAND = exports.SERVER_PORT = exports.getAp
 function getApiBaseUrl(environment) {
     return environment === 'dev'
         ? "http://127.0.0.1:35245"
-        : "https://isgro6sam3.execute-api.us-east-1.amazonaws.com/prod";
+        : "https://xs84120lea.execute-api.us-east-1.amazonaws.com/prod";
 }
 exports.getApiBaseUrl = getApiBaseUrl;
 exports.SERVER_PORT = 54021;
