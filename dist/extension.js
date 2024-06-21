@@ -298,9 +298,13 @@ const vscode = __importStar(__webpack_require__(1));
 const constants_1 = __webpack_require__(4);
 const polka_1 = __importDefault(__webpack_require__(5));
 const TokenManager_1 = __webpack_require__(12);
+let app = null;
 const authenticate = async (fn) => {
+    if (app) {
+        app.server.close();
+    }
     const apiBaseUrl = TokenManager_1.TokenManager.getToken(TokenManager_1.API_BASE_URL);
-    const app = (0, polka_1.default)();
+    app = (0, polka_1.default)();
     app.get(`/auth/:id/:accessToken/:refreshToken`, async (req, res) => {
         const { id, accessToken, refreshToken } = req.params;
         if (!accessToken || !refreshToken) {
@@ -313,6 +317,7 @@ const authenticate = async (fn) => {
         }
         res.end(`<h1>dAppForge authentication was successful, you can close this now</h1>`);
         app.server.close();
+        app = null;
     });
     app.listen(constants_1.SERVER_PORT, (err) => {
         if (err) {
