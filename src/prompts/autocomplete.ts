@@ -142,10 +142,15 @@ export async function dappforgeAutocomplete(args: {
     if (!res.ok || !res.body) {
         if (res.body) {
             let detail: string = '';
-            const data: any = await res.json();
-            console.log(`completed_code: ${JSON.stringify(data, undefined, 2)}`);
-            if (data.hasOwnProperty('detail')) {  
-                detail = data.detail;
+            let body = await res.text();
+            if (body.includes('completed_code')) {
+                const data: any = await res.json();
+                console.log(`completed_code: ${JSON.stringify(data, undefined, 2)}`);
+                if (data.hasOwnProperty('detail')) {  
+                    detail = data.detail;
+                }
+            } else {
+                detail = body;
             }
             throw Error(`Error when trying to query the AI, status: ${res.status} error: ${detail}`);            
         }

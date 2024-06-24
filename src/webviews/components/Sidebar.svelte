@@ -61,7 +61,7 @@
   <div>loading...</div>
 {:else if user}
   <div class="name">
-    {user.name}
+    {user.fullName}
   </div>
   <div class="token-count">
     Tokens: {user.tokenCount}
