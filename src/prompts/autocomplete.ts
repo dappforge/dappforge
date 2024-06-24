@@ -133,7 +133,8 @@ export async function dappforgeAutocomplete(args: {
         body: JSON.stringify(prompt),
         headers: {
             Authorization: basicAuthHeader,
-            'Content-Type': 'application/json',
+            'Content-Type': 'application/json; charset=UTF-8',
+            "Accept": "application/json",
             'access-token': accessToken,
             'refresh-token': refreshToken
         }
