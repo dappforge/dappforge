@@ -1,1 +1,2085 @@
-(()=>{var e={984:e=>{e.exports=function(e){let t=e.url;if(void 0===t)return t;let o=e._parsedUrl;if(o&&o._raw===t)return o;o={},o.query=o.search=null,o.href=o.path=o.pathname=t;let n=t.indexOf("?",1);return-1!==n&&(o.search=t.substring(n),o.query=o.search.substring(1),o.pathname=t.substring(0,n)),o._raw=t,e._parsedUrl=o}},148:(e,t,o)=>{const n=o(611),s=o(706),{parse:r}=o(480),i=o(984);function a(e){return 47===e.charCodeAt(0)?e:"/"+e}function l(e){let t=e.indexOf("/",1);return t>1?e.substring(0,t):e}function c(e,t){t.url=t.url.substring(e.length)||"/",t.path=t.path.substring(e.length)||"/"}function u(e,t,o,s){let r=o.statusCode=e.code||e.status||500;o.end(e.length&&e||e.message||n.STATUS_CODES[r])}class d extends s{constructor(e={}){super(e),this.apps={},this.wares=[],this.bwares={},this.parse=i,this.server=e.server,this.handler=this.handler.bind(this),this.onError=e.onError||u,this.onNoMatch=e.onNoMatch||this.onError.bind(null,{code:404})}add(e,t,...o){let n=a(l(t));if(void 0!==this.apps[n])throw new Error(`Cannot mount ".${e.toLowerCase()}('${a(t)}')" because a Polka application at ".use('${n}')" already exists! You should move this handler into your Polka application instead.`);return super.add(e,t,...o)}use(e,...t){return"function"==typeof e?this.wares=this.wares.concat(e,t):"/"===e?this.wares=this.wares.concat(t):(e=a(e),t.forEach((t=>{if(t instanceof d)this.apps[e]=t;else{let o=this.bwares[e]||[];o.length>0||o.push(((t,o,n)=>(c(e,t),n()))),this.bwares[e]=o.concat(t)}}))),this}listen(){return(this.server=this.server||n.createServer()).on("request",this.handler),this.server.listen.apply(this.server,arguments),this}handler(e,t,o){o=o||this.parse(e);let n=[],s=this.wares,i=this.find(e.method,o.pathname);e.originalUrl=e.originalUrl||e.url;let a=l(e.path=o.pathname);void 0!==this.bwares[a]&&(s=s.concat(this.bwares[a])),i?(n=i.handlers,e.params=i.params):void 0!==this.apps[a]?(c(a,e),o.pathname=e.path,n.push(this.apps[a].handler.bind(null,e,t,o))):0===n.length&&n.push(this.onNoMatch),e.search=o.search,e.query=r(o.query);let u=0,d=s.length,p=n.length;if(d===u&&1===p)return n[0](e,t);let h=o=>o?this.onError(o,e,t,h):f(),f=o=>t.finished||u<d&&s[u++](e,t,h);s=s.concat(n),d+=p,f()}}e.exports=e=>new d(e)},706:(e,t,o)=>{const{exec:n,match:s,parse:r}=o(891);e.exports=class{constructor(e){this.opts=e||{},this.routes={},this.handlers={},this.all=this.add.bind(this,"*"),this.get=this.add.bind(this,"GET"),this.head=this.add.bind(this,"HEAD"),this.patch=this.add.bind(this,"PATCH"),this.options=this.add.bind(this,"OPTIONS"),this.connect=this.add.bind(this,"CONNECT"),this.delete=this.add.bind(this,"DELETE"),this.trace=this.add.bind(this,"TRACE"),this.post=this.add.bind(this,"POST"),this.put=this.add.bind(this,"PUT")}add(e,t,...o){return void 0===this.routes[e]&&(this.routes[e]=[]),this.routes[e].push(r(t)),void 0===this.handlers[e]&&(this.handlers[e]={}),this.handlers[e][t]=o,this}find(e,t){let o=s(t,this.routes[e]||[]);return!(0===o.length&&(o=s(t,this.routes[e="*"]||[]),!o.length))&&{params:n(t,o),handlers:this.handlers[e][o[0].old]}}}},28:function(e,t,o){"use strict";var n=this&&this.__importDefault||function(e){return e&&e.__esModule?e:{default:e}};Object.defineProperty(t,"__esModule",{value:!0}),t.config=void 0;const s=n(o(398));t.config=new class{get inference(){let e=this.#e,t=e.get("aiProvider").trim();""===t&&(t="dAppForge");let o=e.get("endpoint").trim();o.endsWith("/")&&(o=o.slice(0,o.length-1).trim()),""===o&&(o="http://127.0.0.1:11434");let n=e.get("bearerToken"),s=e.get("maxLines"),r=e.get("maxTokens"),i=e.get("temperature"),a=e.get("model"),l="codellama";return"custom"===a?(a=e.get("custom.model"),l=e.get("cutom.format")):a.startsWith("deepseek-coder")?l="deepseek":a.startsWith("stable-code")&&(l="stable-code"),{aiProvider:t,endpoint:o,bearerToken:n,maxLines:s,maxTokens:r,temperature:i,modelName:a,modelFormat:l,delay:e.get("delay")}}get notebook(){let e=s.default.workspace.getConfiguration("notebook");return{includeMarkup:e.get("includeMarkup"),includeCellOutputs:e.get("includeCellOutputs"),cellOutputLimit:e.get("cellOutputLimit")}}get#e(){return s.default.workspace.getConfiguration("inference")}}},921:(e,t)=>{"use strict";Object.defineProperty(t,"__esModule",{value:!0}),t.INLINE_COMPLETION_ACCEPTED_COMMAND=t.SERVER_PORT=t.getApiBaseUrl=void 0,t.getApiBaseUrl=function(e){return"dev"===e?"http://127.0.0.1:35245":"https://xs84120lea.execute-api.us-east-1.amazonaws.com/prod"},t.SERVER_PORT=54021,t.INLINE_COMPLETION_ACCEPTED_COMMAND="dappforge.InlineCompletionAccepted"},265:function(e,t,o){"use strict";var n=this&&this.__createBinding||(Object.create?function(e,t,o,n){void 0===n&&(n=o);var s=Object.getOwnPropertyDescriptor(t,o);s&&!("get"in s?!t.__esModule:s.writable||s.configurable)||(s={enumerable:!0,get:function(){return t[o]}}),Object.defineProperty(e,n,s)}:function(e,t,o,n){void 0===n&&(n=o),e[n]=t[o]}),s=this&&this.__setModuleDefault||(Object.create?function(e,t){Object.defineProperty(e,"default",{enumerable:!0,value:t})}:function(e,t){e.default=t}),r=this&&this.__importStar||function(e){if(e&&e.__esModule)return e;var t={};if(null!=e)for(var o in e)"default"!==o&&Object.prototype.hasOwnProperty.call(e,o)&&n(t,e,o);return s(t,e),t};Object.defineProperty(t,"__esModule",{value:!0}),t.deactivate=t.activate=void 0;const i=r(o(398)),a=o(872),l=o(757),c=o(360),u=o(212),d=o(921);t.activate=function(e){const t=i.workspace.getConfiguration("dAppForge").get("environment","dev");console.log(`Environment: ${t}`),c.TokenManager.globalState=e.globalState,c.TokenManager.setBasicAuthToken(),c.TokenManager.loggedIn()||c.TokenManager.resetTokens(),c.TokenManager.setToken(c.API_BASE_URL,(0,d.getApiBaseUrl)(t));let o=i.window.createStatusBarItem(i.StatusBarAlignment.Right,100);e.subscriptions.push(o),o.command="dappforge.toggle",o.text="$(chip) dAppForge",o.show(),e.subscriptions.push(i.commands.registerCommand("dappforge.openSettings",(()=>{i.commands.executeCommand("workbench.action.openSettings","@ext:dappforge.dappforge")})));const n=new u.PromptProvider(o,e);e.subscriptions.push(i.languages.registerInlineCompletionItemProvider({pattern:"**"},n)),e.subscriptions.push(i.commands.registerCommand("dappforge.pause",(()=>{n.paused=!0}))),e.subscriptions.push(i.commands.registerCommand("dappforge.resume",(()=>{n.paused=!1}))),e.subscriptions.push(i.commands.registerCommand("dappforge.toggle",(()=>{n.paused=!n.paused}))),e.subscriptions.push(i.commands.registerCommand("dappforge.authorised",(()=>{n.authorised=!0}))),e.subscriptions.push(i.commands.registerCommand("dappforge.unauthorised",(()=>{n.authorised=!1})));const s=new a.SidebarProvider(e.extensionUri);e.subscriptions.push(i.window.registerWebviewViewProvider("dappforge-sidebar",s)),e.subscriptions.push(i.commands.registerCommand("dappforge.authenticate",(()=>{try{(0,l.authenticate)()}catch(e){console.log(e)}}))),e.subscriptions.push(i.commands.registerCommand("dappforge.refresh",(async()=>{await i.commands.executeCommand("workbench.action.closeSidebar"),await i.commands.executeCommand("workbench.view.extension.dappforge-sidebar-view")}))),e.subscriptions.push(i.commands.registerCommand(d.INLINE_COMPLETION_ACCEPTED_COMMAND,(()=>{n.completionAccepted(s,1)})))},t.deactivate=function(){}},21:(e,t)=>{"use strict";Object.defineProperty(t,"__esModule",{value:!0}),t.getNonce=void 0,t.getNonce=function(){let e="";for(let t=0;t<32;t++)e+="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789".charAt(Math.floor(62*Math.random()));return e}},360:(e,t,o)=>{"use strict";Object.defineProperty(t,"__esModule",{value:!0}),t.TokenManager=t.AUTO_COMPLETE_ACTIVE=t.API_BASE_URL=t.TOKEN_COUNT=t.BASIC_AUTH_TOKEN=t.USER_ID_KEY=t.REFRESH_TOKEN_KEY=t.ACCESS_TOKEN_KEY=void 0;const n=o(185);t.ACCESS_TOKEN_KEY="dappforgeaccesstoken",t.REFRESH_TOKEN_KEY="dappforgerefreshtoken",t.USER_ID_KEY="dappforgeuserid",t.BASIC_AUTH_TOKEN="dappforgebasicauth",t.TOKEN_COUNT="dappforgetokencount",t.API_BASE_URL="dappforgetokenapibaseurl",t.AUTO_COMPLETE_ACTIVE="dappforgetokenautocompleteactive";class s{static globalState;static setBasicAuthToken(){this.setToken(t.BASIC_AUTH_TOKEN,(0,n.getBasicAuthToken)())}static setToken(e,t){return this.globalState.update(e,t)}static getToken(e){return this.globalState.get(e)}static getTokensAsJsonString(){return JSON.stringify({basicAuthToken:s.getToken(t.BASIC_AUTH_TOKEN),userId:s.getToken(t.USER_ID_KEY),accessToken:s.getToken(t.ACCESS_TOKEN_KEY),refreshToken:s.getToken(t.REFRESH_TOKEN_KEY)})}static setTokens(e,o,n){this.setToken(t.USER_ID_KEY,e),this.setToken(t.ACCESS_TOKEN_KEY,o),this.setToken(t.REFRESH_TOKEN_KEY,n)}static resetTokens(){this.setToken(t.USER_ID_KEY,""),this.setToken(t.ACCESS_TOKEN_KEY,""),this.setToken(t.REFRESH_TOKEN_KEY,""),this.setToken(t.TOKEN_COUNT,"0")}static getTokenCount(){const e=this.getToken(t.TOKEN_COUNT);return e&&e.length>0?Number(e):0}static loggedIn(){return!(!s.getToken(t.USER_ID_KEY)||""===s.getToken(t.USER_ID_KEY))}}t.TokenManager=s},757:function(e,t,o){"use strict";var n=this&&this.__createBinding||(Object.create?function(e,t,o,n){void 0===n&&(n=o);var s=Object.getOwnPropertyDescriptor(t,o);s&&!("get"in s?!t.__esModule:s.writable||s.configurable)||(s={enumerable:!0,get:function(){return t[o]}}),Object.defineProperty(e,n,s)}:function(e,t,o,n){void 0===n&&(n=o),e[n]=t[o]}),s=this&&this.__setModuleDefault||(Object.create?function(e,t){Object.defineProperty(e,"default",{enumerable:!0,value:t})}:function(e,t){e.default=t}),r=this&&this.__importStar||function(e){if(e&&e.__esModule)return e;var t={};if(null!=e)for(var o in e)"default"!==o&&Object.prototype.hasOwnProperty.call(e,o)&&n(t,e,o);return s(t,e),t},i=this&&this.__importDefault||function(e){return e&&e.__esModule?e:{default:e}};Object.defineProperty(t,"__esModule",{value:!0}),t.authenticate=void 0;const a=r(o(398)),l=o(921),c=i(o(148)),u=o(360);let d=null;t.authenticate=async e=>{d&&d.server.close();const t=u.TokenManager.getToken(u.API_BASE_URL);d=(0,c.default)(),d.get("/auth/:id/:accessToken/:refreshToken",(async(t,o)=>{const{id:n,accessToken:s,refreshToken:r}=t.params;s&&r?(u.TokenManager.setTokens(n,s,r),e&&e(),o.end("<h1>dAppForge authentication was successful, you can close this now</h1>"),d.server.close(),d=null):o.end("<h1>Failed to authenticate, something went wrong</h1>")})),d.listen(l.SERVER_PORT,(e=>{e?a.window.showErrorMessage(e.message):a.commands.executeCommand("vscode.open",a.Uri.parse(`${t}/auth/github`))}))}},93:(e,t)=>{"use strict";Object.defineProperty(t,"__esModule",{value:!0}),t.lineGenerator=void 0,t.lineGenerator=async function*(e,t,o){const n=new AbortController;let s=await fetch(e,{method:"POST",body:JSON.stringify(t),headers:o?{"Content-Type":"application/json",Authorization:`Bearer ${o}`}:{"Content-Type":"application/json"},signal:n.signal});if(!s.ok||!s.body)throw Error("Unable to connect to backend");let r=s.body.getReader();const i=new TextDecoder;let a="";try{for(;;){const{done:e,value:t}=await r.read();if(e){a.length>0&&(yield a);break}let o=i.decode(t);for(console.warn(o),a+=o;a.indexOf("\n")>=0;){let e=a.indexOf("\n");yield a.slice(0,e),a=a.slice(e+1)}}}finally{r.releaseLock(),r.closed||await r.cancel(),n.abort()}}},675:(e,t)=>{"use strict";Object.defineProperty(t,"__esModule",{value:!0}),t.AsyncLock=void 0,t.AsyncLock=class{permits=1;promiseResolverQueue=[];async inLock(e){try{return await this.lock(),await e()}finally{this.unlock()}}async lock(){this.permits>0?this.permits=this.permits-1:await new Promise((e=>this.promiseResolverQueue.push(e)))}unlock(){if(this.permits+=1,this.permits>1&&this.promiseResolverQueue.length>0)throw new Error("this.permits should never be > 0 when there is someone waiting.");if(1===this.permits&&this.promiseResolverQueue.length>0){this.permits-=1;const e=this.promiseResolverQueue.shift();e&&setTimeout((()=>{e(!0)}),0)}}}},979:(e,t)=>{"use strict";Object.defineProperty(t,"__esModule",{value:!0}),t.ollamaCheckModel=void 0,t.ollamaCheckModel=async function(e,t,o){let n=await fetch(e+"/api/tags",{headers:o?{Authorization:`Bearer ${o}`}:{}});if(!n.ok)throw console.log(await n.text()),console.log(e+"/api/tags"),Error("Network response was not ok.");return!!(await n.json()).models.find((e=>e.name===t))}},13:(e,t,o)=>{"use strict";Object.defineProperty(t,"__esModule",{value:!0}),t.ollamaDownloadModel=void 0;const n=o(93);t.ollamaDownloadModel=async function(e,t,o){console.log("Downloading model from ollama: "+t);for await(let s of(0,n.lineGenerator)(e+"/api/pull",{name:t},o))console.log("[DOWNLOAD] "+s)}},116:(e,t,o)=>{"use strict";Object.defineProperty(t,"__esModule",{value:!0}),t.ollamaTokenGenerator=void 0;const n=o(93);t.ollamaTokenGenerator=async function*(e,t,o){for await(let s of(0,n.lineGenerator)(e,t,o)){let e;console.log("Receive line: "+s);try{e=JSON.parse(s)}catch(e){console.warn("Receive wrong line: "+s);continue}yield e}}},655:(e,t)=>{"use strict";function o(e){return 0===e.trim().length}function n(e){for(let t=0;t<e.length;t++)if(!o(e[t]))return t;return e.length}function s(e,t){let o=0;for(let n=0;n<e.length;n++)e[n]===t&&o++;return o}Object.defineProperty(t,"__esModule",{value:!0}),t.countSymbol=t.trimEndBlank=t.trimIndent=t.indentWidth=t.isBlank=t.countLines=void 0,t.countLines=function(e){return s(e,"\n")+1},t.isBlank=o,t.indentWidth=n,t.trimIndent=function(e){let t=e.split("\n");if(0===t.length)return"";if(1===t.length)return t[0].trim();if(o(t[0])&&(t=t.slice(1)),o(t[t.length-1])&&(t=t.slice(0,t.length-1)),0===t.length)return"";let s=t.filter((e=>!o(e))).map((e=>n(e))),r=s.length>0?Math.min(...s):0;return t.map((e=>o(e)?"":e.slice(r).trimEnd())).join("\n")},t.trimEndBlank=function(e){let t=e.split("\n");for(let e=t.length-1;e++;e>=0)o(t[e])&&t.splice(e);return t.join("\n")},t.countSymbol=s},522:(e,t,o)=>{"use strict";Object.defineProperty(t,"__esModule",{value:!0}),t.dappforgeAutocomplete=t.autocomplete=void 0;const n=o(116),s=o(655),r=o(360),i=o(185),a=o(264);t.autocomplete=async function(e){let t=(0,a.adaptPrompt)({prefix:e.prefix,suffix:e.suffix,format:e.format}),o={model:e.model,prompt:t.prompt,raw:!0,options:{stop:t.stop,num_predict:e.maxTokens,temperature:e.temperature}},r="",i=1,l=[];e:for await(let t of(0,n.ollamaTokenGenerator)(e.endpoint+"/api/generate",o,e.bearerToken)){if(e.canceled&&e.canceled())break;for(let e of t.response){if("["===e?l.push("["):"("===e&&l.push("("),"{"===e&&l.push("{"),"]"===e){if(!(l.length>0&&"["===l[l.length-1])){console.log("Block stack error, breaking.");break e}l.pop()}if(")"===e){if(!(l.length>0&&"("===l[l.length-1])){console.log("Block stack error, breaking.");break e}l.pop()}if("}"===e){if(!(l.length>0&&"{"===l[l.length-1])){console.log("Block stack error, breaking.");break e}l.pop()}r+=e}if(i+=(0,s.countSymbol)(t.response,"\n"),i>e.maxLines&&0===l.length){console.log("Too many lines, breaking.");break}}return r.endsWith("<EOT>")&&(r=r.slice(0,r.length-5)),r=r.split("\n").map((e=>e.trimEnd())).join("\n"),r},t.dappforgeAutocomplete=async function(e){const t={prefix_code:e.prefix};console.log(`args.prefix: ${JSON.stringify(e,void 0,2)}`);const o=`${r.TokenManager.getToken(r.API_BASE_URL)}/ai/generate_code/${r.TokenManager.getToken(r.USER_ID_KEY)}`,n=`Basic ${(0,i.getBasicAuthToken)()}`;console.log(`url: ${o} prompt: ${JSON.stringify(t)} auth: ${n}`);const s=r.TokenManager.getToken(r.ACCESS_TOKEN_KEY)||"",a=r.TokenManager.getToken(r.REFRESH_TOKEN_KEY)||"";let l=await fetch(o,{method:"POST",body:JSON.stringify(t),headers:{Authorization:n,"Content-Type":"application/json; charset=UTF-8",Accept:"application/json","access-token":s,"refresh-token":a}});if(!l.ok||!l.body){if(l.body){let e="",t=await l.text();if(t.includes("completed_code")){const t=await l.json();console.log(`completed_code: ${JSON.stringify(t,void 0,2)}`),t.hasOwnProperty("detail")&&(e=t.detail)}else e=t;throw Error(`Error when trying to query the AI, status: ${l.status} error: ${e}`)}throw Error("Unable to connect to backend")}if(200!==l.status){let e="";const t=await l.json();throw console.log(`completed_code: ${JSON.stringify(t,void 0,2)}`),t.hasOwnProperty("detail")&&(e=t.detail),Error(`Error when trying to query the AI, status: ${l.status} error: ${e}`)}console.log(`res.body: ${l.body}`);const c=await l.json();console.log(`returned code: ${JSON.stringify(c,void 0,2)}`);let u="";return c.hasOwnProperty("generated_code")&&(u=c.generated_code,u=u.split("\n").map((e=>e.trimEnd())).join("\n"),console.log(`completed_code: ${u}`)),console.log(`code: ${u}`),u}},624:function(e,t,o){"use strict";var n=this&&this.__importDefault||function(e){return e&&e.__esModule?e:{default:e}};Object.defineProperty(t,"__esModule",{value:!0}),t.isNotNeeded=t.isSupported=void 0;const s=n(o(928));t.isSupported=function(e,t){return("file"===e.uri.scheme||"vscode-notebook-cell"===e.uri.scheme||"vscode-remote"===e.uri.scheme)&&("dAppForge"!==t||"dAppForge"===t&&".rs"===s.default.extname(e.uri.fsPath))},t.isNotNeeded=function(e,t,o){return!1}},761:function(e,t,o){"use strict";var n=this&&this.__importDefault||function(e){return e&&e.__esModule?e:{default:e}};Object.defineProperty(t,"__esModule",{value:!0}),t.preparePrompt=void 0;const s=n(o(398)),r=o(855),i=o(560),a=o(995),l=o(28);var c=new TextDecoder("utf8");t.preparePrompt=async function(e,t,o){let n,u=e.getText(),d=e.offsetAt(t),p=u.slice(0,d),h=u.slice(d),f=l.config.notebook,m=function(e){return s.default.workspace.notebookDocuments.find((t=>t.uri.path===e.uri.path))}(e),g=(0,r.detectLanguage)(e.uri.fsPath,e.languageId);if(g&&(n=a.languages[g].comment?.start),m){let t=!0,o="",r="";m.getCells().forEach((i=>{let a="";if(i.document.uri.fragment!==e.uri.fragment){if(i.kind===s.default.NotebookCellKind.Markup&&n){if(f.includeMarkup)for(const e of i.document.getText().split("\n"))a+=`\n${n}${e}`}else a+=i.document.getText();if(f.includeCellOutputs&&t&&i.kind===s.default.NotebookCellKind.Code&&n){let e=i.outputs.map((e=>e.items.filter((e=>"text/plain"===e.mime)).map((e=>c.decode(e.data))).map((e=>e.slice(0,f.cellOutputLimit).split("\n"))))).flat(3);if(e.length>0){a+=`\n${n}Output:`;for(const t of e)a+=`\n${n}${t}`}}t?o+=a:r+=a}else t=!1})),p=o+p,h+=r}return g&&(p=(0,i.fileHeaders)(p,e.uri.fsPath,a.languages[g])),{prefix:p,suffix:h}}},165:(e,t)=>{"use strict";Object.defineProperty(t,"__esModule",{value:!0}),t.comment=void 0,t.comment=function(e,t){return t.comment?t.comment.end?`${t.comment.start} ${e} ${t.comment.end}`:`${t.comment.start} ${e}`:null}},855:function(e,t,o){"use strict";var n=this&&this.__importDefault||function(e){return e&&e.__esModule?e:{default:e}};Object.defineProperty(t,"__esModule",{value:!0}),t.detectLanguage=void 0;const s=n(o(928)),r=o(995);let i={typescriptreact:"typescript",javascriptreact:"javascript",jsx:"javascript"};t.detectLanguage=function(e,t){if(t&&i[t])return i[t];if(t&&r.languages[t])return t;let o=s.default.basename(e),n=s.default.extname(o).toLowerCase();for(let e in r.languages){let t=r.languages[e];for(let o of t.extensions)if(n===o)return e}return null}},560:(e,t,o)=>{"use strict";Object.defineProperty(t,"__esModule",{value:!0}),t.fileHeaders=void 0;const n=o(165);t.fileHeaders=function(e,t,o){let s=e;if(o){let e=(0,n.comment)("Path: "+t,o);e&&(s=e+"\n"+s);let r=(0,n.comment)("Language: "+o.name,o);r&&(s=r+"\n"+s)}return s}},995:(e,t)=>{"use strict";Object.defineProperty(t,"__esModule",{value:!0}),t.languages=void 0,t.languages={typescript:{name:"Typescript",extensions:[".ts",".tsx",".cts",".mts"],comment:{start:"//"}},javascript:{name:"Javascript",extensions:[".js",".jsx",".cjs"],comment:{start:"//"}},html:{name:"HTML",extensions:[".htm",".html"],comment:{start:"\x3c!--",end:"--\x3e"}},css:{name:"CSS",extensions:[".css",".scss",".sass",".less"]},json:{name:"JSON",extensions:[".json",".jsonl",".geojson"]},yaml:{name:"YAML",extensions:[".yml",".yaml"],comment:{start:"#"}},xml:{name:"XML",extensions:[".xml"],comment:{start:"\x3c!--",end:"--\x3e"}},java:{name:"Java",extensions:[".java"],comment:{start:"//"}},kotlin:{name:"Kotlin",extensions:[".kt",".ktm",".kts"],comment:{start:"//"}},swift:{name:"Swift",extensions:[".swift"],comment:{start:"//"}},"objective-c":{name:"Objective C",extensions:[".h",".m",".mm"],comment:{start:"//"}},rust:{name:"Rust",extensions:[".rs",".rs.in"],comment:{start:"//"}},python:{name:"Python",extensions:[".py","ipynb"],comment:{start:"#"}},c:{name:"C",extensions:[".c",".h"],comment:{start:"//"}},cpp:{name:"C++",extensions:[".cpp",".h"],comment:{start:"//"}},go:{name:"Go",extensions:[".go"],comment:{start:"//"}},php:{name:"PHP",extensions:[".aw",".ctp",".fcgi",".inc",".php",".php3",".php4",".php5",".phps",".phpt"],comment:{start:"//"}},bat:{name:"BAT file",extensions:[".bat",".cmd"],comment:{start:"REM"}},shellscript:{name:"Shell",extensions:[".bash",".sh"],comment:{start:"#"}}}},264:(e,t)=>{"use strict";Object.defineProperty(t,"__esModule",{value:!0}),t.adaptPrompt=void 0,t.adaptPrompt=function(e){return"deepseek"===e.format?{prompt:`<｜fim▁begin｜>${e.prefix}<｜fim▁hole｜>${e.suffix}<｜fim▁end｜>`,stop:["<｜fim▁begin｜>","<｜fim▁hole｜>","<｜fim▁end｜>","<END>"]}:"stable-code"===e.format?{prompt:`<fim_prefix>${e.prefix}<fim_suffix>${e.suffix}<fim_middle>`,stop:["<|endoftext|>"]}:{prompt:`<PRE> ${e.prefix} <SUF> ${e.suffix} <MID>`,stop:["<END>","<EOD>","<EOT>"]}}},588:(e,t)=>{"use strict";function o(e){return(e=e.split("\n").join(" ")).replace(/\s+/gm," ")}function n(e){return e.suffix?o(e.prefix+" ##CURSOR## "+e.suffix):o(e.prefix)}Object.defineProperty(t,"__esModule",{value:!0}),t.setPromptToCache=t.getFromPromptCache=void 0;let s={};t.getFromPromptCache=function(e){const t=n(e);return s[t]},t.setPromptToCache=function(e){const t=n(e);s[t]=e.value}},872:function(e,t,o){"use strict";var n=this&&this.__createBinding||(Object.create?function(e,t,o,n){void 0===n&&(n=o);var s=Object.getOwnPropertyDescriptor(t,o);s&&!("get"in s?!t.__esModule:s.writable||s.configurable)||(s={enumerable:!0,get:function(){return t[o]}}),Object.defineProperty(e,n,s)}:function(e,t,o,n){void 0===n&&(n=o),e[n]=t[o]}),s=this&&this.__setModuleDefault||(Object.create?function(e,t){Object.defineProperty(e,"default",{enumerable:!0,value:t})}:function(e,t){e.default=t}),r=this&&this.__importStar||function(e){if(e&&e.__esModule)return e;var t={};if(null!=e)for(var o in e)"default"!==o&&Object.prototype.hasOwnProperty.call(e,o)&&n(t,e,o);return s(t,e),t};Object.defineProperty(t,"__esModule",{value:!0}),t.SidebarProvider=void 0;const i=r(o(398)),a=o(757),l=o(21),c=o(360);t.SidebarProvider=class{_extensionUri;_view;_doc;constructor(e){this._extensionUri=e}postMessageToWebview(e){this._view?.webview.postMessage(e)}resolveWebviewView(e){this._view=e,e.webview.options={enableScripts:!0,localResourceRoots:[this._extensionUri]},e.webview.html=this._getHtmlForWebview(e.webview),e.webview.onDidReceiveMessage((async t=>{switch(console.log(`---\x3e<><> onDidReceiveMessage ${JSON.stringify(t,void 0,2)}`),t.type){case"logout":c.TokenManager.resetTokens(),i.commands.executeCommand("dappforge.unauthorised");break;case"authenticate":(0,a.authenticate)((()=>{e.webview.postMessage({type:"token",value:c.TokenManager.getTokensAsJsonString()})}));break;case"logged-in-out":t.value?(c.TokenManager.setToken(c.TOKEN_COUNT,String(t.value.tokenCount)),t.value.tokenCount<=0?i.commands.executeCommand("dappforge.unauthorised"):i.commands.executeCommand("dappforge.authorised")):(c.TokenManager.resetTokens(),i.commands.executeCommand("dappforge.unauthorised"));break;case"get-token":e.webview.postMessage({type:"token",value:c.TokenManager.getTokensAsJsonString()});break;case"onInfo":if(!t.value)return;i.window.showInformationMessage(t.value);break;case"onError":if(!t.value)return;i.window.showErrorMessage(t.value)}}))}revive(e){this._view=e}_getHtmlForWebview(e){const t=e.asWebviewUri(i.Uri.joinPath(this._extensionUri,"media","reset.css")),o=e.asWebviewUri(i.Uri.joinPath(this._extensionUri,"media","vscode.css")),n=e.asWebviewUri(i.Uri.joinPath(this._extensionUri,"out","compiled/sidebar.js")),s=e.asWebviewUri(i.Uri.joinPath(this._extensionUri,"out","compiled/sidebar.css")),r=(0,l.getNonce)();return`<!DOCTYPE html>\n\t\t\t<html lang="en">\n\t\t\t<head>\n\t\t\t\t<meta charset="UTF-8">\n\t\t\t\t\x3c!--\n\t\t\t\t\tUse a content security policy to only allow loading images from https or from our extension directory,\n\t\t\t\t\tand only allow scripts that have a specific nonce.\n        --\x3e\n        <meta http-equiv="Content-Security-Policy" content="img-src https: data:; style-src 'unsafe-inline' ${e.cspSource}; script-src 'nonce-${r}';">\n\t\t\t\t<meta name="viewport" content="width=device-width, initial-scale=1.0">\n\t\t\t\t<link href="${t}" rel="stylesheet">\n\t\t\t\t<link href="${o}" rel="stylesheet">\n        <link href="${s}" rel="stylesheet">\n        <script nonce="${r}">\n          const tsvscode = acquireVsCodeApi();\n          const apiBaseUrl = ${JSON.stringify(c.TokenManager.getToken(c.API_BASE_URL))}\n        <\/script>\n\t\t\t</head>\n      <body>\n\t\t\t\t<script nonce="${r}" src="${n}"><\/script>\n\t\t\t</body>\n\t\t\t</html>`}}},212:function(e,t,o){"use strict";var n=this&&this.__importDefault||function(e){return e&&e.__esModule?e:{default:e}};Object.defineProperty(t,"__esModule",{value:!0}),t.PromptProvider=void 0;const s=n(o(398)),r=o(522),i=o(761),a=o(675),l=o(588),c=o(624),u=o(979),d=o(13),p=o(28),h=o(360),f=o(921);t.PromptProvider=class{lock=new a.AsyncLock;statusbar;context;_paused=!0;_solution_accepted=!1;_authorised=!1;_status={icon:"chip",text:"dAppForge"};constructor(e,t){this.statusbar=e,this.context=t,this._authorised=h.TokenManager.loggedIn(),this._paused="true"===h.TokenManager.getToken(h.AUTO_COMPLETE_ACTIVE),this.update()}set authorised(e){this._authorised=h.TokenManager.loggedIn(),this.update()}get authorised(){return this._authorised}set paused(e){this._paused=e,h.TokenManager.setToken(h.AUTO_COMPLETE_ACTIVE,`${e}`),this.update()}get paused(){return!h.TokenManager.loggedIn()||this._paused}update(e,t){this._status.icon=e||this._status.icon,this._status.text=t||this._status.text;let o="",n="";this.paused||!this.authorised?(o=`$(sync-ignored) ${this._status.text}`,n=`${this._status.text} (Paused)`):(o=`$(${this._status.icon}) ${this._status.text}`,n=`${this._status.text}`),this.statusbar.text=o,this.statusbar.tooltip=n}async delayCompletion(e,t){return!(p.config.inference.delay<0||(await new Promise((t=>setTimeout(t,e))),t.isCancellationRequested))}async provideInlineCompletionItems(e,t,o,n){if(await this.delayCompletion(p.config.inference.delay,n)&&!this._solution_accepted)try{if(this.paused||!this.authorised)return;console.log(`provideInlineCompletionItems:document: ${JSON.stringify(e,void 0,2)}`),console.log(`setting res at position: ${JSON.stringify(t,void 0,2)} context: ${JSON.stringify(o,void 0,2)}`);let a=p.config.inference;return(0,c.isSupported)(e,a.aiProvider)?(0,c.isNotNeeded)(e,t,o)?void console.log("No inline completion required"):n.isCancellationRequested?void console.log("Canceled before AI completion."):await this.lock.inLock((async()=>{let c=await(0,i.preparePrompt)(e,t,o);if(n.isCancellationRequested)return void console.log("Canceled before AI completion.");let p=null;console.log(`prepared.prefix: ${c.prefix} prepared.suffix: ${c.suffix}`);let h=(0,l.getFromPromptCache)({prefix:c.prefix,suffix:c.suffix});if(void 0===h){console.log("not in cache"),this.update("sync~spin","dAppForge");try{if(console.log(`inferenceConfig.aiProvider: ${a.aiProvider}`),"Ollama"===a.aiProvider){let e=await(0,u.ollamaCheckModel)(a.endpoint,a.modelName,a.bearerToken);if(n.isCancellationRequested)return void console.log("Canceled after AI completion.");if(!e){if(this.context.globalState.get("llama-coder-download-ignored")===a.modelName)return void console.log("Ingoring since user asked to ignore download.");if("No"===await s.default.window.showInformationMessage(`Model ${a.modelName} is not downloaded. Do you want to download it? Answering "No" would require you to manually download model.`,"Yes","No"))return console.log("Ingoring since user asked to ignore download."),void this.context.globalState.update("llama-coder-download-ignored",a.modelName);this.update("sync~spin","Downloading"),await(0,d.ollamaDownloadModel)(a.endpoint,a.modelName,a.bearerToken),this.update("sync~spin","dAppForge")}if(n.isCancellationRequested)return void console.log("Canceled after AI completion.");console.log("Running AI completion..."),p=await(0,r.autocomplete)({prefix:c.prefix,suffix:c.suffix,endpoint:a.endpoint,bearerToken:a.bearerToken,model:a.modelName,format:a.modelFormat,maxLines:a.maxLines,maxTokens:a.maxTokens,temperature:a.temperature,canceled:()=>n.isCancellationRequested})}else console.log("Running AI completion..."),p=await(0,r.dappforgeAutocomplete)({prefix:c.prefix,suffix:c.suffix,endpoint:a.endpoint,bearerToken:a.bearerToken,model:a.modelName,format:a.modelFormat,maxLines:a.maxLines,maxTokens:a.maxTokens,temperature:a.temperature,canceled:()=>n.isCancellationRequested});console.log(`AI completion completed: ${p}`),console.log(`store in cache prepared.prefix: ${c.prefix} prepared.suffix: ${c.suffix} res: ${p}`),(0,l.setPromptToCache)({prefix:c.prefix,suffix:c.suffix,value:p})}finally{this.update("chip","dAppForge")}}else null!==h&&(p=h);if(n.isCancellationRequested)console.log("Canceled after AI completion.");else if(p&&""!==p.trim()){console.log(`setting res at position: ${JSON.stringify(t,void 0,2)}`);const e=[],o=new s.default.InlineCompletionItem(p,new s.default.Range(t,t));return o.command={command:f.INLINE_COMPLETION_ACCEPTED_COMMAND,title:"Inline Completion Accepted"},e.push(o),e}})):void console.log(`Unsupported document: ${e.uri.toString()} ignored.`)}catch(e){console.log("Error during inference:",e),s.default.window.showErrorMessage(e.message)}else this._solution_accepted=!1}async completionAccepted(e,t){if(h.TokenManager.loggedIn()&&!this.paused){console.log("Call endpoint to reduce count");try{let o=await fetch(`${h.TokenManager.getToken(h.API_BASE_URL)}/ai/reduce_token_count/${h.TokenManager.getToken(h.USER_ID_KEY)}`,{method:"POST",body:JSON.stringify({cost:t}),headers:{authorization:`Basic ${h.TokenManager.getToken(h.BASIC_AUTH_TOKEN)}`,"Content-Type":"application/json","access-token":h.TokenManager.getToken(h.ACCESS_TOKEN_KEY)||"","refresh-token":h.TokenManager.getToken(h.REFRESH_TOKEN_KEY)||""}});if(!o.ok||!o.body)throw Error("Unable to connect to backend");console.log(`res.body: ${o.body}`);const n=await o.json();console.log(`returned code: ${JSON.stringify(n,void 0,2)}`),h.TokenManager.setToken(h.TOKEN_COUNT,String(n.tokenCount)),n.tokenCount<=0?s.default.commands.executeCommand("dappforge.unauthorised"):s.default.commands.executeCommand("dappforge.authorised"),e.postMessageToWebview({type:"update-token-count",value:n.tokenCount}),this._solution_accepted=!0}catch(e){console.log("Error when trying to charge for the AI completion:",e),s.default.window.showErrorMessage(e.message)}}}}},185:(e,t)=>{"use strict";Object.defineProperty(t,"__esModule",{value:!0}),t.getBasicAuthToken=t.PASSWORD=t.USERNAME=void 0,t.USERNAME="dappforge-api-user",t.PASSWORD="d8pp4ge-8pi-p8ssan-AI_app?thatwillanswerQuestions",t.getBasicAuthToken=function(){return Buffer.from(t.USERNAME+":"+t.PASSWORD).toString("base64")}},398:e=>{"use strict";e.exports=require("vscode")},611:e=>{"use strict";e.exports=require("http")},928:e=>{"use strict";e.exports=require("path")},480:e=>{"use strict";e.exports=require("querystring")},891:(e,t,o)=>{"use strict";function n(e,t){for(var o=0,n=e.length;o<n;o++)if(!t(e[o],o,e))return!1;return!0}o.r(t),o.d(t,{exec:()=>b,match:()=>g,parse:()=>_});const s="/",r=0,i=1,a=2,l=3,c=47,u=58,d=42,p=63;function h(e){if(e===s)return e;e.charCodeAt(0)===c&&(e=e.substring(1));var t=e.length-1;return e.charCodeAt(t)===c?e.substring(0,t):e}function f(e){return(e=h(e))===s?[s]:e.split(s)}function m(e,t,o){return o=e[o],t.val===o&&t.type===r||(o===s?t.type>i:t.type!==r&&(o||"").endsWith(t.end))}function g(e,t){for(var o,s,r=0,i=f(e),c=i.length,u=m.bind(m,i);r<t.length;r++)if(((s=(o=t[r]).length)===c||s<c&&o[s-1].type===a||s>c&&o[s-1].type===l)&&n(o,u))return o;return[]}function _(e){if(e===s)return[{old:e,type:r,val:e,end:""}];for(var t,o,n,f,m=h(e),g=-1,_=0,b=m.length,v=[];++g<b;)if((t=m.charCodeAt(g))!==u)if(t!==d){for(_=g;g<b&&m.charCodeAt(g)!==c;)++g;v.push({old:e,type:r,val:m.substring(_,g),end:""}),m=m.substring(g),b-=g,g=_=0}else v.push({old:e,type:a,val:m.substring(g),end:""});else{for(_=g+1,n=i,o=0,f="";g<b&&m.charCodeAt(g)!==c;)(t=m.charCodeAt(g))===p?(o=g,n=l):46===t&&0===f.length&&(f=m.substring(o=g)),g++;v.push({old:e,type:n,val:m.substring(_,o||g),end:f}),m=m.substring(g),b-=g,g=0}return v}function b(e,t){for(var o,n,r=0,i=f(e),a={};r<t.length;r++)o=i[r],n=t[r],o!==s&&void 0!==o&&n.type|2===l&&(a[n.val]=o.replace(n.end,""));return a}}},t={};function o(n){var s=t[n];if(void 0!==s)return s.exports;var r=t[n]={exports:{}};return e[n].call(r.exports,r,r.exports,o),r.exports}o.d=(e,t)=>{for(var n in t)o.o(t,n)&&!o.o(e,n)&&Object.defineProperty(e,n,{enumerable:!0,get:t[n]})},o.o=(e,t)=>Object.prototype.hasOwnProperty.call(e,t),o.r=e=>{"undefined"!=typeof Symbol&&Symbol.toStringTag&&Object.defineProperty(e,Symbol.toStringTag,{value:"Module"}),Object.defineProperty(e,"__esModule",{value:!0})};var n=o(265);module.exports=n})();
+/******/ (() => { // webpackBootstrap
+/******/ 	var __webpack_modules__ = ([
+/* 0 */
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.deactivate = exports.activate = void 0;
+// The module 'vscode' contains the VS Code extensibility API
+// Import the module and reference it with the alias vscode in your code below
+const vscode = __importStar(__webpack_require__(1));
+const SidebarProvider_1 = __webpack_require__(2);
+const authenticate_1 = __webpack_require__(3);
+const TokenManager_1 = __webpack_require__(12);
+const provider_1 = __webpack_require__(15);
+const constants_1 = __webpack_require__(4);
+// This method is called when your extension is activated
+// Your extension is activated the very first time the command is executed
+function activate(context) {
+    const config = vscode.workspace.getConfiguration('dAppForge');
+    const environment = config.get('environment', 'dev');
+    console.log(`Environment: ${environment}`);
+    TokenManager_1.TokenManager.globalState = context.globalState;
+    TokenManager_1.TokenManager.setBasicAuthToken();
+    if (!TokenManager_1.TokenManager.loggedIn()) {
+        TokenManager_1.TokenManager.resetTokens();
+    }
+    TokenManager_1.TokenManager.setToken(TokenManager_1.API_BASE_URL, (0, constants_1.getApiBaseUrl)(environment));
+    // Create status bar
+    let statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
+    context.subscriptions.push(statusBarItem);
+    statusBarItem.command = 'dappforge.toggle';
+    statusBarItem.text = `$(chip) dAppForge`;
+    statusBarItem.show();
+    // Settings
+    context.subscriptions.push(vscode.commands.registerCommand('dappforge.openSettings', () => {
+        vscode.commands.executeCommand('workbench.action.openSettings', '@ext:dappforge.dappforge');
+    }));
+    // Create provider
+    const provider = new provider_1.PromptProvider(statusBarItem, context);
+    context.subscriptions.push(vscode.languages.registerInlineCompletionItemProvider({ pattern: '**', }, provider));
+    context.subscriptions.push(vscode.commands.registerCommand('dappforge.pause', () => {
+        provider.paused = true;
+    }));
+    context.subscriptions.push(vscode.commands.registerCommand('dappforge.resume', () => {
+        provider.paused = false;
+    }));
+    context.subscriptions.push(vscode.commands.registerCommand('dappforge.toggle', () => {
+        provider.paused = !provider.paused;
+    }));
+    context.subscriptions.push(vscode.commands.registerCommand('dappforge.authorised', () => {
+        provider.authorised = true;
+    }));
+    context.subscriptions.push(vscode.commands.registerCommand('dappforge.unauthorised', () => {
+        provider.authorised = false;
+    }));
+    // Sidebar provider
+    const sidebarProvider = new SidebarProvider_1.SidebarProvider(context.extensionUri);
+    context.subscriptions.push(vscode.window.registerWebviewViewProvider("dappforge-sidebar", sidebarProvider));
+    context.subscriptions.push(vscode.commands.registerCommand("dappforge.authenticate", () => {
+        try {
+            (0, authenticate_1.authenticate)();
+        }
+        catch (err) {
+            console.log(err);
+        }
+    }));
+    context.subscriptions.push(vscode.commands.registerCommand("dappforge.refresh", async () => {
+        await vscode.commands.executeCommand("workbench.action.closeSidebar");
+        await vscode.commands.executeCommand("workbench.view.extension.dappforge-sidebar-view");
+    }));
+    context.subscriptions.push(vscode.commands.registerCommand(constants_1.INLINE_COMPLETION_ACCEPTED_COMMAND, () => {
+        //vscode.window.showInformationMessage('Inline completion accepted!');
+        // Call webview to decrement token count
+        const tokenCount = provider.completionAccepted(sidebarProvider, 1);
+    }));
+}
+exports.activate = activate;
+// This method is called when your extension is deactivated
+function deactivate() { }
+exports.deactivate = deactivate;
+
+
+/***/ }),
+/* 1 */
+/***/ ((module) => {
+
+"use strict";
+module.exports = require("vscode");
+
+/***/ }),
+/* 2 */
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.SidebarProvider = void 0;
+const vscode = __importStar(__webpack_require__(1));
+const authenticate_1 = __webpack_require__(3);
+const getNonce_1 = __webpack_require__(14);
+const TokenManager_1 = __webpack_require__(12);
+class SidebarProvider {
+    _extensionUri;
+    _view;
+    _doc;
+    constructor(_extensionUri) {
+        this._extensionUri = _extensionUri;
+    }
+    postMessageToWebview(message) {
+        // Post message to webview
+        this._view?.webview.postMessage(message);
+    }
+    resolveWebviewView(webviewView) {
+        this._view = webviewView;
+        webviewView.webview.options = {
+            // Allow scripts in the webview
+            enableScripts: true,
+            localResourceRoots: [this._extensionUri],
+        };
+        webviewView.webview.html = this._getHtmlForWebview(webviewView.webview);
+        webviewView.webview.onDidReceiveMessage(async (data) => {
+            console.log(`---><><> onDidReceiveMessage ${JSON.stringify(data, undefined, 2)}`);
+            switch (data.type) {
+                case "logout": {
+                    TokenManager_1.TokenManager.resetTokens();
+                    vscode.commands.executeCommand('dappforge.unauthorised');
+                    break;
+                }
+                case "authenticate": {
+                    (0, authenticate_1.authenticate)(() => {
+                        webviewView.webview.postMessage({
+                            type: "token",
+                            value: TokenManager_1.TokenManager.getTokensAsJsonString()
+                        });
+                    });
+                    break;
+                }
+                case "logged-in-out": {
+                    if (!data.value) {
+                        TokenManager_1.TokenManager.resetTokens();
+                        vscode.commands.executeCommand('dappforge.unauthorised');
+                    }
+                    else {
+                        TokenManager_1.TokenManager.setToken(TokenManager_1.TOKEN_COUNT, String(data.value.tokenCount));
+                        if (data.value.tokenCount <= 0) {
+                            vscode.commands.executeCommand('dappforge.unauthorised');
+                        }
+                        else {
+                            vscode.commands.executeCommand('dappforge.authorised');
+                        }
+                    }
+                    break;
+                }
+                case "get-token": {
+                    webviewView.webview.postMessage({
+                        type: "token",
+                        value: TokenManager_1.TokenManager.getTokensAsJsonString()
+                    });
+                    break;
+                }
+                case "onInfo": {
+                    if (!data.value) {
+                        return;
+                    }
+                    vscode.window.showInformationMessage(data.value);
+                    break;
+                }
+                case "onError": {
+                    if (!data.value) {
+                        return;
+                    }
+                    vscode.window.showErrorMessage(data.value);
+                    break;
+                }
+            }
+        });
+    }
+    revive(panel) {
+        this._view = panel;
+    }
+    _getHtmlForWebview(webview) {
+        const styleResetUri = webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, "media", "reset.css"));
+        const styleVSCodeUri = webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, "media", "vscode.css"));
+        const scriptUri = webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, "out", "compiled/sidebar.js"));
+        const styleMainUri = webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, "out", "compiled/sidebar.css"));
+        // Use a nonce to only allow a specific script to be run.
+        const nonce = (0, getNonce_1.getNonce)();
+        return `<!DOCTYPE html>
+			<html lang="en">
+			<head>
+				<meta charset="UTF-8">
+				<!--
+					Use a content security policy to only allow loading images from https or from our extension directory,
+					and only allow scripts that have a specific nonce.
+        -->
+        <meta http-equiv="Content-Security-Policy" content="img-src https: data:; style-src 'unsafe-inline' ${webview.cspSource}; script-src 'nonce-${nonce}';">
+				<meta name="viewport" content="width=device-width, initial-scale=1.0">
+				<link href="${styleResetUri}" rel="stylesheet">
+				<link href="${styleVSCodeUri}" rel="stylesheet">
+        <link href="${styleMainUri}" rel="stylesheet">
+        <script nonce="${nonce}">
+          const tsvscode = acquireVsCodeApi();
+          const apiBaseUrl = ${JSON.stringify(TokenManager_1.TokenManager.getToken(TokenManager_1.API_BASE_URL))}
+        </script>
+			</head>
+      <body>
+				<script nonce="${nonce}" src="${scriptUri}"></script>
+			</body>
+			</html>`;
+    }
+}
+exports.SidebarProvider = SidebarProvider;
+
+
+/***/ }),
+/* 3 */
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.authenticate = void 0;
+const vscode = __importStar(__webpack_require__(1));
+const constants_1 = __webpack_require__(4);
+const polka_1 = __importDefault(__webpack_require__(5));
+const TokenManager_1 = __webpack_require__(12);
+let app = null;
+const authenticate = async (fn) => {
+    if (app) {
+        app.server.close();
+    }
+    const apiBaseUrl = TokenManager_1.TokenManager.getToken(TokenManager_1.API_BASE_URL);
+    app = (0, polka_1.default)();
+    app.get(`/auth/:id/:accessToken/:refreshToken`, async (req, res) => {
+        const { id, accessToken, refreshToken } = req.params;
+        if (!accessToken || !refreshToken) {
+            res.end(`<h1>Failed to authenticate, something went wrong</h1>`);
+            return;
+        }
+        TokenManager_1.TokenManager.setTokens(id, accessToken, refreshToken);
+        if (fn) {
+            fn();
+        }
+        res.end(`<h1>dAppForge authentication was successful, you can close this now</h1>`);
+        app.server.close();
+        app = null;
+    });
+    app.listen(constants_1.SERVER_PORT, (err) => {
+        if (err) {
+            vscode.window.showErrorMessage(err.message);
+        }
+        else {
+            vscode.commands.executeCommand("vscode.open", vscode.Uri.parse(`${apiBaseUrl}/auth/github`));
+        }
+    });
+};
+exports.authenticate = authenticate;
+
+
+/***/ }),
+/* 4 */
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.INLINE_COMPLETION_ACCEPTED_COMMAND = exports.SERVER_PORT = exports.getApiBaseUrl = void 0;
+function getApiBaseUrl(environment) {
+    return environment === 'dev'
+        ? "http://127.0.0.1:35245"
+        : "https://xs84120lea.execute-api.us-east-1.amazonaws.com/prod";
+}
+exports.getApiBaseUrl = getApiBaseUrl;
+exports.SERVER_PORT = 54021;
+exports.INLINE_COMPLETION_ACCEPTED_COMMAND = 'dappforge.InlineCompletionAccepted';
+
+
+/***/ }),
+/* 5 */
+/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
+
+const http = __webpack_require__(6);
+const Router = __webpack_require__(7);
+const { parse } = __webpack_require__(10);
+const parser = __webpack_require__(11);
+
+function lead(x) {
+	return x.charCodeAt(0) === 47 ? x : ('/' + x);
+}
+
+function value(x) {
+  let y = x.indexOf('/', 1);
+  return y > 1 ? x.substring(0, y) : x;
+}
+
+function mutate(str, req) {
+	req.url = req.url.substring(str.length) || '/';
+	req.path = req.path.substring(str.length) || '/';
+}
+
+function onError(err, req, res, next) {
+	let code = (res.statusCode = err.code || err.status || 500);
+	res.end(err.length && err || err.message || http.STATUS_CODES[code]);
+}
+
+class Polka extends Router {
+	constructor(opts={}) {
+		super(opts);
+		this.apps = {};
+		this.wares = [];
+		this.bwares = {};
+		this.parse = parser;
+		this.server = opts.server;
+		this.handler = this.handler.bind(this);
+		this.onError = opts.onError || onError; // catch-all handler
+		this.onNoMatch = opts.onNoMatch || this.onError.bind(null, { code:404 });
+	}
+
+	add(method, pattern, ...fns) {
+		let base = lead(value(pattern));
+		if (this.apps[base] !== void 0) throw new Error(`Cannot mount ".${method.toLowerCase()}('${lead(pattern)}')" because a Polka application at ".use('${base}')" already exists! You should move this handler into your Polka application instead.`);
+		return super.add(method, pattern, ...fns);
+	}
+
+	use(base, ...fns) {
+		if (typeof base === 'function') {
+			this.wares = this.wares.concat(base, fns);
+		} else if (base === '/') {
+			this.wares = this.wares.concat(fns);
+		} else {
+			base = lead(base);
+			fns.forEach(fn => {
+				if (fn instanceof Polka) {
+					this.apps[base] = fn;
+				} else {
+					let arr = this.bwares[base] || [];
+					arr.length > 0 || arr.push((r, _, nxt) => (mutate(base, r),nxt()));
+					this.bwares[base] = arr.concat(fn);
+				}
+			});
+		}
+		return this; // chainable
+	}
+
+	listen() {
+		(this.server = this.server || http.createServer()).on('request', this.handler);
+		this.server.listen.apply(this.server, arguments);
+		return this;
+	}
+
+	handler(req, res, info) {
+		info = info || this.parse(req);
+		let fns=[], arr=this.wares, obj=this.find(req.method, info.pathname);
+		req.originalUrl = req.originalUrl || req.url;
+		let base = value(req.path = info.pathname);
+		if (this.bwares[base] !== void 0) {
+			arr = arr.concat(this.bwares[base]);
+		}
+		if (obj) {
+			fns = obj.handlers;
+			req.params = obj.params;
+		} else if (this.apps[base] !== void 0) {
+			mutate(base, req); info.pathname=req.path; //=> updates
+			fns.push(this.apps[base].handler.bind(null, req, res, info));
+		} else if (fns.length === 0) {
+			fns.push(this.onNoMatch);
+		}
+		// Grab addl values from `info`
+		req.search = info.search;
+		req.query = parse(info.query);
+		// Exit if only a single function
+		let i=0, len=arr.length, num=fns.length;
+		if (len === i && num === 1) return fns[0](req, res);
+		// Otherwise loop thru all middlware
+		let next = err => err ? this.onError(err, req, res, next) : loop();
+		let loop = _ => res.finished || (i < len) && arr[i++](req, res, next);
+		arr = arr.concat(fns);
+		len += num;
+		loop(); // init
+	}
+}
+
+module.exports = opts => new Polka(opts);
+
+
+/***/ }),
+/* 6 */
+/***/ ((module) => {
+
+"use strict";
+module.exports = require("http");
+
+/***/ }),
+/* 7 */
+/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
+
+const { exec, match, parse } = __webpack_require__(8);
+
+class Trouter {
+	constructor(opts) {
+		this.opts = opts || {};
+		this.routes = {};
+		this.handlers = {};
+
+		this.all = this.add.bind(this, '*');
+		this.get = this.add.bind(this, 'GET');
+		this.head = this.add.bind(this, 'HEAD');
+		this.patch = this.add.bind(this, 'PATCH');
+		this.options = this.add.bind(this, 'OPTIONS');
+    this.connect = this.add.bind(this, 'CONNECT');
+		this.delete = this.add.bind(this, 'DELETE');
+    this.trace = this.add.bind(this, 'TRACE');
+		this.post = this.add.bind(this, 'POST');
+		this.put = this.add.bind(this, 'PUT');
+	}
+
+	add(method, pattern, ...fns) {
+		// Save decoded pattern info
+		if (this.routes[method] === void 0) this.routes[method]=[];
+		this.routes[method].push(parse(pattern));
+		// Save route handler(s)
+		if (this.handlers[method] === void 0) this.handlers[method]={};
+		this.handlers[method][pattern] = fns;
+		// Allow chainable
+		return this;
+	}
+
+	find(method, url) {
+		let arr = match(url, this.routes[method] || []);
+		if (arr.length === 0) {
+			arr = match(url, this.routes[method='*'] || []);
+			if (!arr.length) return false;
+		}
+		return {
+			params: exec(url, arr),
+			handlers: this.handlers[method][arr[0].old]
+		};
+	}
+}
+
+module.exports = Trouter;
+
+
+/***/ }),
+/* 8 */
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   exec: () => (/* binding */ exec),
+/* harmony export */   match: () => (/* binding */ match),
+/* harmony export */   parse: () => (/* binding */ parse)
+/* harmony export */ });
+/* harmony import */ var _arr_every__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(9);
+
+
+
+
+const SEP = '/';
+// Types ~> static, param, any, optional
+const STYPE=0, PTYPE=1, ATYPE=2, OTYPE=3;
+// Char Codes ~> / : *
+const SLASH=47, COLON=58, ASTER=42, QMARK=63;
+
+function strip(str) {
+	if (str === SEP) return str;
+	(str.charCodeAt(0) === SLASH) && (str=str.substring(1));
+	var len = str.length - 1;
+	return str.charCodeAt(len) === SLASH ? str.substring(0, len) : str;
+}
+
+function split(str) {
+	return (str=strip(str)) === SEP ? [SEP] : str.split(SEP);
+}
+
+function isMatch(arr, obj, idx) {
+	idx = arr[idx];
+	return (obj.val === idx && obj.type === STYPE) || (idx === SEP ? obj.type > PTYPE : obj.type !== STYPE && (idx || '').endsWith(obj.end));
+}
+
+function match(str, all) {
+	var i=0, tmp, segs=split(str), len=segs.length, l;
+	var fn = isMatch.bind(isMatch, segs);
+
+	for (; i < all.length; i++) {
+		tmp = all[i];
+		if ((l=tmp.length) === len || (l < len && tmp[l-1].type === ATYPE) || (l > len && tmp[l-1].type === OTYPE)) {
+			if ((0,_arr_every__WEBPACK_IMPORTED_MODULE_0__["default"])(tmp, fn)) return tmp;
+		}
+	}
+
+	return [];
+}
+
+function parse(str) {
+	if (str === SEP) {
+		return [{ old:str, type:STYPE, val:str, end:'' }];
+	}
+
+	var c, x, t, sfx, nxt=strip(str), i=-1, j=0, len=nxt.length, out=[];
+
+	while (++i < len) {
+		c = nxt.charCodeAt(i);
+
+		if (c === COLON) {
+			j = i + 1; // begining of param
+			t = PTYPE; // set type
+			x = 0; // reset mark
+			sfx = '';
+
+			while (i < len && nxt.charCodeAt(i) !== SLASH) {
+				c = nxt.charCodeAt(i);
+				if (c === QMARK) {
+					x=i; t=OTYPE;
+				} else if (c === 46 && sfx.length === 0) {
+					sfx = nxt.substring(x=i);
+				}
+				i++; // move on
+			}
+
+			out.push({
+				old: str,
+				type: t,
+				val: nxt.substring(j, x||i),
+				end: sfx
+			});
+
+			// shorten string & update pointers
+			nxt=nxt.substring(i); len-=i; i=0;
+
+			continue; // loop
+		} else if (c === ASTER) {
+			out.push({
+				old: str,
+				type: ATYPE,
+				val: nxt.substring(i),
+				end: ''
+			});
+			continue; // loop
+		} else {
+			j = i;
+			while (i < len && nxt.charCodeAt(i) !== SLASH) {
+				++i; // skip to next slash
+			}
+			out.push({
+				old: str,
+				type: STYPE,
+				val: nxt.substring(j, i),
+				end: ''
+			});
+			// shorten string & update pointers
+			nxt=nxt.substring(i); len-=i; i=j=0;
+		}
+	}
+
+	return out;
+}
+
+function exec(str, arr) {
+	var i=0, x, y, segs=split(str), out={};
+	for (; i < arr.length; i++) {
+		x=segs[i]; y=arr[i];
+		if (x === SEP) continue;
+		if (x !== void 0 && y.type | 2 === OTYPE) {
+			out[ y.val ] = x.replace(y.end, '');
+		}
+	}
+	return out;
+}
+
+
+/***/ }),
+/* 9 */
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (/* export default binding */ __WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony default export */ function __WEBPACK_DEFAULT_EXPORT__(arr, cb) {
+	var i=0, len=arr.length;
+
+	for (; i < len; i++) {
+		if (!cb(arr[i], i, arr)) {
+			return false;
+		}
+	}
+
+	return true;
+}
+
+
+/***/ }),
+/* 10 */
+/***/ ((module) => {
+
+"use strict";
+module.exports = require("querystring");
+
+/***/ }),
+/* 11 */
+/***/ ((module) => {
+
+module.exports = function (req) {
+	let url = req.url;
+	if (url === void 0) return url;
+
+	let obj = req._parsedUrl;
+	if (obj && obj._raw === url) return obj;
+
+	obj = {};
+	obj.query = obj.search = null;
+	obj.href = obj.path = obj.pathname = url;
+
+	let idx = url.indexOf('?', 1);
+	if (idx !== -1) {
+		obj.search = url.substring(idx);
+		obj.query = obj.search.substring(1);
+		obj.pathname = url.substring(0, idx);
+	}
+
+	obj._raw = url;
+
+	return (req._parsedUrl = obj);
+}
+
+
+/***/ }),
+/* 12 */
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.TokenManager = exports.AUTO_COMPLETE_ACTIVE = exports.API_BASE_URL = exports.TOKEN_COUNT = exports.BASIC_AUTH_TOKEN = exports.USER_ID_KEY = exports.REFRESH_TOKEN_KEY = exports.ACCESS_TOKEN_KEY = void 0;
+const utils_1 = __webpack_require__(13);
+exports.ACCESS_TOKEN_KEY = "dappforgeaccesstoken";
+exports.REFRESH_TOKEN_KEY = "dappforgerefreshtoken";
+exports.USER_ID_KEY = "dappforgeuserid";
+exports.BASIC_AUTH_TOKEN = "dappforgebasicauth";
+exports.TOKEN_COUNT = "dappforgetokencount";
+exports.API_BASE_URL = "dappforgetokenapibaseurl";
+exports.AUTO_COMPLETE_ACTIVE = "dappforgetokenautocompleteactive";
+class TokenManager {
+    static globalState;
+    static setBasicAuthToken() {
+        this.setToken(exports.BASIC_AUTH_TOKEN, (0, utils_1.getBasicAuthToken)());
+    }
+    static setToken(key, token) {
+        return this.globalState.update(key, token);
+    }
+    static getToken(key) {
+        return this.globalState.get(key);
+    }
+    static getTokensAsJsonString() {
+        return JSON.stringify({
+            basicAuthToken: TokenManager.getToken(exports.BASIC_AUTH_TOKEN),
+            userId: TokenManager.getToken(exports.USER_ID_KEY),
+            accessToken: TokenManager.getToken(exports.ACCESS_TOKEN_KEY),
+            refreshToken: TokenManager.getToken(exports.REFRESH_TOKEN_KEY)
+        });
+    }
+    static setTokens(id, accessToken, refreshToken) {
+        this.setToken(exports.USER_ID_KEY, id);
+        this.setToken(exports.ACCESS_TOKEN_KEY, accessToken);
+        this.setToken(exports.REFRESH_TOKEN_KEY, refreshToken);
+    }
+    static resetTokens() {
+        this.setToken(exports.USER_ID_KEY, "");
+        this.setToken(exports.ACCESS_TOKEN_KEY, "");
+        this.setToken(exports.REFRESH_TOKEN_KEY, "");
+        this.setToken(exports.TOKEN_COUNT, "0");
+    }
+    static getTokenCount() {
+        const count = this.getToken(exports.TOKEN_COUNT);
+        if (count && count.length > 0) {
+            return Number(count);
+        }
+        else {
+            return 0;
+        }
+    }
+    static loggedIn() {
+        return (TokenManager.getToken(exports.USER_ID_KEY) && TokenManager.getToken(exports.USER_ID_KEY) !== "") ? true : false;
+    }
+}
+exports.TokenManager = TokenManager;
+
+
+/***/ }),
+/* 13 */
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.getBasicAuthToken = exports.PASSWORD = exports.USERNAME = void 0;
+exports.USERNAME = "dappforge-api-user";
+exports.PASSWORD = "d8pp4ge-8pi-p8ssan-AI_app?thatwillanswerQuestions";
+function getBasicAuthToken() {
+    return Buffer.from(exports.USERNAME + ":" + exports.PASSWORD).toString('base64');
+}
+exports.getBasicAuthToken = getBasicAuthToken;
+
+
+/***/ }),
+/* 14 */
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.getNonce = void 0;
+function getNonce() {
+    let text = "";
+    const possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    for (let i = 0; i < 32; i++) {
+        text += possible.charAt(Math.floor(Math.random() * possible.length));
+    }
+    return text;
+}
+exports.getNonce = getNonce;
+
+
+/***/ }),
+/* 15 */
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+"use strict";
+
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.PromptProvider = void 0;
+const vscode_1 = __importDefault(__webpack_require__(1));
+const autocomplete_1 = __webpack_require__(16);
+const preparePrompt_1 = __webpack_require__(21);
+const lock_1 = __webpack_require__(28);
+const promptCache_1 = __webpack_require__(29);
+const filter_1 = __webpack_require__(30);
+const ollamaCheckModel_1 = __webpack_require__(31);
+const ollamaDownloadModel_1 = __webpack_require__(32);
+const config_1 = __webpack_require__(27);
+const TokenManager_1 = __webpack_require__(12);
+const constants_1 = __webpack_require__(4);
+class PromptProvider {
+    lock = new lock_1.AsyncLock();
+    statusbar;
+    context;
+    _paused = true;
+    _solution_accepted = false;
+    _authorised = false;
+    _status = { icon: "chip", text: "dAppForge" };
+    constructor(statusbar, context) {
+        this.statusbar = statusbar;
+        this.context = context;
+        this._authorised = TokenManager_1.TokenManager.loggedIn();
+        this._paused = TokenManager_1.TokenManager.getToken(TokenManager_1.AUTO_COMPLETE_ACTIVE) === 'true';
+        this.update();
+    }
+    set authorised(value) {
+        this._authorised = TokenManager_1.TokenManager.loggedIn();
+        this.update();
+    }
+    get authorised() {
+        return this._authorised;
+    }
+    set paused(value) {
+        this._paused = value;
+        TokenManager_1.TokenManager.setToken(TokenManager_1.AUTO_COMPLETE_ACTIVE, `${value}`);
+        this.update();
+    }
+    get paused() {
+        if (!TokenManager_1.TokenManager.loggedIn()) {
+            return true;
+        }
+        return this._paused;
+    }
+    update(icon, text) {
+        this._status.icon = icon ? icon : this._status.icon;
+        this._status.text = text ? text : this._status.text;
+        let statusText = '';
+        let statusTooltip = '';
+        if (this.paused || !this.authorised) {
+            statusText = `$(sync-ignored) ${this._status.text}`;
+            statusTooltip = `${this._status.text} (Paused)`;
+        }
+        else {
+            statusText = `$(${this._status.icon}) ${this._status.text}`;
+            statusTooltip = `${this._status.text}`;
+        }
+        this.statusbar.text = statusText;
+        this.statusbar.tooltip = statusTooltip;
+    }
+    async delayCompletion(delay, token) {
+        if (config_1.config.inference.delay < 0) {
+            return false;
+        }
+        await new Promise(p => setTimeout(p, delay));
+        if (token.isCancellationRequested) {
+            return false;
+        }
+        return true;
+    }
+    async provideInlineCompletionItems(document, position, context, token) {
+        if (!await this.delayCompletion(config_1.config.inference.delay, token) || this._solution_accepted) {
+            if (this._solution_accepted) {
+                console.log(`xxxxxxx do not query AI as solution was accepted`);
+            }
+            // Do not do another AI request when a solution is accepted
+            this._solution_accepted = false;
+            return;
+        }
+        try {
+            if (this.paused || !this.authorised) {
+                return;
+            }
+            console.log(`provideInlineCompletionItems:document: ${JSON.stringify(document, undefined, 2)}`);
+            console.log(`setting res at position: ${JSON.stringify(position, undefined, 2)} context: ${JSON.stringify(context, undefined, 2)}`);
+            // Config
+            let inferenceConfig = config_1.config.inference;
+            // Ignore unsupported documents
+            if (!(0, filter_1.isSupported)(document, inferenceConfig.aiProvider)) {
+                console.log(`Unsupported document: ${document.uri.toString()} ignored.`);
+                return;
+            }
+            // Ignore if not needed
+            if ((0, filter_1.isNotNeeded)(document, position, context)) {
+                console.log('No inline completion required');
+                return;
+            }
+            // Ignore if already canceled
+            if (token.isCancellationRequested) {
+                console.log(`Canceled before AI completion.`);
+                return;
+            }
+            // Execute in lock
+            return await this.lock.inLock(async () => {
+                // Prepare context
+                let prepared = await (0, preparePrompt_1.preparePrompt)(document, position, context, inferenceConfig.aiProvider !== 'dAppForge');
+                if (token.isCancellationRequested) {
+                    console.log(`Canceled before AI completion.`);
+                    return;
+                }
+                // Result
+                let res = null;
+                console.log(`<><><><>prepared.prefix: ${prepared.prefix} prepared.suffix: ${prepared.suffix} prepared.prefix.length: ${prepared.prefix?.length}`);
+                // Check if in cache
+                let cached = (0, promptCache_1.getFromPromptCache)({
+                    prefix: prepared.prefix,
+                    suffix: prepared.suffix
+                });
+                // If not cached
+                if (cached === undefined) {
+                    console.log('not in cache');
+                    // Update status
+                    this.update('sync~spin', 'dAppForge');
+                    try {
+                        console.log(`inferenceConfig.aiProvider: ${inferenceConfig.aiProvider}`);
+                        if (inferenceConfig.aiProvider === "Ollama") {
+                            // Check model exists
+                            let modelExists = await (0, ollamaCheckModel_1.ollamaCheckModel)(inferenceConfig.endpoint, inferenceConfig.modelName, inferenceConfig.bearerToken);
+                            if (token.isCancellationRequested) {
+                                console.log(`Canceled after AI completion.`);
+                                return;
+                            }
+                            // Download model if not exists
+                            if (!modelExists) {
+                                // Check if user asked to ignore download
+                                if (this.context.globalState.get('llama-coder-download-ignored') === inferenceConfig.modelName) {
+                                    console.log(`Ingoring since user asked to ignore download.`);
+                                    return;
+                                }
+                                // Ask for download
+                                let download = await vscode_1.default.window.showInformationMessage(`Model ${inferenceConfig.modelName} is not downloaded. Do you want to download it? Answering "No" would require you to manually download model.`, 'Yes', 'No');
+                                if (download === 'No') {
+                                    console.log(`Ingoring since user asked to ignore download.`);
+                                    this.context.globalState.update('llama-coder-download-ignored', inferenceConfig.modelName);
+                                    return;
+                                }
+                                // Perform download
+                                this.update('sync~spin', 'Downloading');
+                                await (0, ollamaDownloadModel_1.ollamaDownloadModel)(inferenceConfig.endpoint, inferenceConfig.modelName, inferenceConfig.bearerToken);
+                                this.update('sync~spin', 'dAppForge');
+                            }
+                            if (token.isCancellationRequested) {
+                                console.log(`Canceled after AI completion.`);
+                                return;
+                            }
+                            // Run AI completion
+                            console.log(`Running AI completion...`);
+                            res = await (0, autocomplete_1.autocomplete)({
+                                prefix: prepared.prefix,
+                                suffix: prepared.suffix,
+                                endpoint: inferenceConfig.endpoint,
+                                bearerToken: inferenceConfig.bearerToken,
+                                model: inferenceConfig.modelName,
+                                format: inferenceConfig.modelFormat,
+                                maxLines: inferenceConfig.maxLines,
+                                maxTokens: inferenceConfig.maxTokens,
+                                temperature: inferenceConfig.temperature,
+                                canceled: () => token.isCancellationRequested,
+                            });
+                        }
+                        else {
+                            // Run AI completion
+                            console.log(`Running AI completion...`);
+                            res = await (0, autocomplete_1.dappforgeAutocomplete)({
+                                prefix: prepared.prefix,
+                                suffix: prepared.suffix,
+                                endpoint: inferenceConfig.endpoint,
+                                bearerToken: inferenceConfig.bearerToken,
+                                model: inferenceConfig.modelName,
+                                format: inferenceConfig.modelFormat,
+                                maxLines: inferenceConfig.maxLines,
+                                maxTokens: inferenceConfig.maxTokens,
+                                temperature: inferenceConfig.temperature,
+                                canceled: () => token.isCancellationRequested,
+                            });
+                        }
+                        console.log(`AI completion completed: ${res}`);
+                        console.log(`store in cache prepared.prefix: ${prepared.prefix} prepared.suffix: ${prepared.suffix} res: ${res}`);
+                        // Put to cache
+                        (0, promptCache_1.setPromptToCache)({
+                            prefix: prepared.prefix,
+                            suffix: prepared.suffix,
+                            value: res
+                        });
+                    }
+                    finally {
+                        this.update('chip', 'dAppForge');
+                    }
+                }
+                else {
+                    if (cached !== null) {
+                        res = cached;
+                    }
+                }
+                if (token.isCancellationRequested) {
+                    console.log(`Canceled after AI completion.`);
+                    return;
+                }
+                // Return result
+                if (res && res.trim() !== '') {
+                    console.log(`setting res at position: ${JSON.stringify(position, undefined, 2)}`);
+                    const completionItems = [];
+                    const completionItem = new vscode_1.default.InlineCompletionItem(res, new vscode_1.default.Range(position, position));
+                    // Attach the command to the completion item so we can detect when its been accepted
+                    completionItem.command = {
+                        command: constants_1.INLINE_COMPLETION_ACCEPTED_COMMAND,
+                        title: 'Inline Completion Accepted'
+                    };
+                    completionItems.push(completionItem);
+                    return completionItems;
+                }
+                // Nothing to complete
+                return;
+            });
+        }
+        catch (e) {
+            console.log('Error during inference:', e);
+            vscode_1.default.window.showErrorMessage(e.message);
+        }
+    }
+    async completionAccepted(sidebarProvider, cost) {
+        if (TokenManager_1.TokenManager.loggedIn() && !this.paused) {
+            console.log("Call endpoint to reduce count");
+            try {
+                let res = await fetch(`${TokenManager_1.TokenManager.getToken(TokenManager_1.API_BASE_URL)}/ai/reduce_token_count/${TokenManager_1.TokenManager.getToken(TokenManager_1.USER_ID_KEY)}`, {
+                    method: "POST",
+                    body: JSON.stringify({ cost: cost }),
+                    headers: {
+                        authorization: `Basic ${TokenManager_1.TokenManager.getToken(TokenManager_1.BASIC_AUTH_TOKEN)}`,
+                        "Content-Type": "application/json",
+                        "access-token": TokenManager_1.TokenManager.getToken(TokenManager_1.ACCESS_TOKEN_KEY) || '',
+                        "refresh-token": TokenManager_1.TokenManager.getToken(TokenManager_1.REFRESH_TOKEN_KEY) || ''
+                    },
+                });
+                if (!res.ok || !res.body) {
+                    throw Error("Unable to connect to backend");
+                }
+                console.log(`res.body: ${res.body}`);
+                const json = await res.json();
+                console.log(`returned code: ${JSON.stringify(json, undefined, 2)}`);
+                TokenManager_1.TokenManager.setToken(TokenManager_1.TOKEN_COUNT, String(json.tokenCount));
+                if (json.tokenCount <= 0) {
+                    vscode_1.default.commands.executeCommand('dappforge.unauthorised');
+                }
+                else {
+                    vscode_1.default.commands.executeCommand('dappforge.authorised');
+                }
+                sidebarProvider.postMessageToWebview({
+                    type: "update-token-count",
+                    value: json.tokenCount
+                });
+                this._solution_accepted = true;
+            }
+            catch (e) {
+                console.log('Error when trying to charge for the AI completion:', e);
+                vscode_1.default.window.showErrorMessage(e.message);
+            }
+        }
+    }
+}
+exports.PromptProvider = PromptProvider;
+
+
+/***/ }),
+/* 16 */
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.dappforgeAutocomplete = exports.autocomplete = void 0;
+const ollamaTokenGenerator_1 = __webpack_require__(17);
+const text_1 = __webpack_require__(19);
+const TokenManager_1 = __webpack_require__(12);
+const utils_1 = __webpack_require__(13);
+const models_1 = __webpack_require__(20);
+async function autocomplete(args) {
+    let prompt = (0, models_1.adaptPrompt)({ prefix: args.prefix, suffix: args.suffix, format: args.format });
+    // Calculate arguments
+    let data = {
+        model: args.model,
+        prompt: prompt.prompt,
+        raw: true,
+        options: {
+            stop: prompt.stop,
+            num_predict: args.maxTokens,
+            temperature: args.temperature
+        }
+    };
+    // Receiving tokens
+    let res = '';
+    let totalLines = 1;
+    let blockStack = [];
+    outer: for await (let tokens of (0, ollamaTokenGenerator_1.ollamaTokenGenerator)(args.endpoint + '/api/generate', data, args.bearerToken)) {
+        if (args.canceled && args.canceled()) {
+            break;
+        }
+        // Block stack
+        for (let c of tokens.response) {
+            // Open block
+            if (c === '[') {
+                blockStack.push('[');
+            }
+            else if (c === '(') {
+                blockStack.push('(');
+            }
+            if (c === '{') {
+                blockStack.push('{');
+            }
+            // Close block
+            if (c === ']') {
+                if (blockStack.length > 0 && blockStack[blockStack.length - 1] === '[') {
+                    blockStack.pop();
+                }
+                else {
+                    console.log('Block stack error, breaking.');
+                    break outer;
+                }
+            }
+            if (c === ')') {
+                if (blockStack.length > 0 && blockStack[blockStack.length - 1] === '(') {
+                    blockStack.pop();
+                }
+                else {
+                    console.log('Block stack error, breaking.');
+                    break outer;
+                }
+            }
+            if (c === '}') {
+                if (blockStack.length > 0 && blockStack[blockStack.length - 1] === '{') {
+                    blockStack.pop();
+                }
+                else {
+                    console.log('Block stack error, breaking.');
+                    break outer;
+                }
+            }
+            // Append charater
+            res += c;
+        }
+        // Update total lines
+        totalLines += (0, text_1.countSymbol)(tokens.response, '\n');
+        // Break if too many lines and on top level
+        if (totalLines > args.maxLines && blockStack.length === 0) {
+            console.log('Too many lines, breaking.');
+            break;
+        }
+    }
+    // Remove <EOT>
+    if (res.endsWith('<EOT>')) {
+        res = res.slice(0, res.length - 5);
+    }
+    // Trim ends of all lines since sometimes the AI completion will add extra spaces
+    res = res.split('\n').map((v) => v.trimEnd()).join('\n');
+    return res;
+}
+exports.autocomplete = autocomplete;
+async function dappforgeAutocomplete(args) {
+    const prompt = { "prefix_code": args.prefix };
+    console.log(`args.prefix: ${JSON.stringify(args, undefined, 2)}`);
+    const url = `${TokenManager_1.TokenManager.getToken(TokenManager_1.API_BASE_URL)}/ai/generate_code/${TokenManager_1.TokenManager.getToken(TokenManager_1.USER_ID_KEY)}`;
+    const basicAuthHeader = `Basic ${(0, utils_1.getBasicAuthToken)()}`;
+    console.log(`url: ${url} prompt: ${JSON.stringify(prompt)} auth: ${basicAuthHeader}`);
+    const accessToken = TokenManager_1.TokenManager.getToken(TokenManager_1.ACCESS_TOKEN_KEY) || '';
+    const refreshToken = TokenManager_1.TokenManager.getToken(TokenManager_1.REFRESH_TOKEN_KEY) || '';
+    // Request
+    let res = await fetch(url, {
+        method: 'POST',
+        body: JSON.stringify(prompt),
+        headers: {
+            Authorization: basicAuthHeader,
+            'Content-Type': 'application/json; charset=UTF-8',
+            "Accept": "application/json",
+            'access-token': accessToken,
+            'refresh-token': refreshToken
+        }
+    });
+    if (!res.ok || !res.body) {
+        if (res.body) {
+            let detail = '';
+            let body = await res.text();
+            if (body.includes('completed_code')) {
+                const data = await res.json();
+                console.log(`completed_code: ${JSON.stringify(data, undefined, 2)}`);
+                if (data.hasOwnProperty('detail')) {
+                    detail = data.detail;
+                }
+            }
+            else {
+                detail = body;
+            }
+            throw Error(`Error when trying to query the AI, status: ${res.status} error: ${detail}`);
+        }
+        throw Error('Unable to connect to backend');
+    }
+    if (res.status !== 200) {
+        let detail = '';
+        const data = await res.json();
+        console.log(`completed_code: ${JSON.stringify(data, undefined, 2)}`);
+        if (data.hasOwnProperty('detail')) {
+            detail = data.detail;
+        }
+        throw Error(`Error when trying to query the AI, status: ${res.status} error: ${detail}`);
+    }
+    console.log(`res.body: ${res.body}`);
+    const data = await res.json();
+    console.log(`returned code: ${JSON.stringify(data, undefined, 2)}`);
+    let code = '';
+    if (data.hasOwnProperty('generated_code')) {
+        code = data.generated_code;
+        // Trim ends of all lines since sometimes the AI completion will add extra spaces
+        code = code.split('\n').map((v) => v.trimEnd()).join('\n');
+        console.log(`completed_code: ${code}`);
+    }
+    console.log(`code: ${code}`);
+    return code;
+}
+exports.dappforgeAutocomplete = dappforgeAutocomplete;
+
+
+/***/ }),
+/* 17 */
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.ollamaTokenGenerator = void 0;
+const lineGenerator_1 = __webpack_require__(18);
+async function* ollamaTokenGenerator(url, data, bearerToken) {
+    for await (let line of (0, lineGenerator_1.lineGenerator)(url, data, bearerToken)) {
+        console.log('Receive line: ' + line);
+        let parsed;
+        try {
+            parsed = JSON.parse(line);
+        }
+        catch (e) {
+            console.warn('Receive wrong line: ' + line);
+            continue;
+        }
+        yield parsed;
+    }
+}
+exports.ollamaTokenGenerator = ollamaTokenGenerator;
+
+
+/***/ }),
+/* 18 */
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.lineGenerator = void 0;
+async function* lineGenerator(url, data, bearerToken) {
+    // Request
+    const controller = new AbortController();
+    let res = await fetch(url, {
+        method: 'POST',
+        body: JSON.stringify(data),
+        headers: bearerToken ? {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${bearerToken}`,
+        } : {
+            'Content-Type': 'application/json',
+        },
+        signal: controller.signal,
+    });
+    if (!res.ok || !res.body) {
+        throw Error('Unable to connect to backend');
+    }
+    // Reading stream
+    let stream = res.body.getReader();
+    const decoder = new TextDecoder();
+    let pending = '';
+    try {
+        while (true) {
+            const { done, value } = await stream.read();
+            // If ended
+            if (done) {
+                if (pending.length > 0) { // New lines are impossible here
+                    yield pending;
+                }
+                break;
+            }
+            // Append chunk
+            let chunk = decoder.decode(value);
+            console.warn(chunk);
+            pending += chunk;
+            // Yield results 
+            while (pending.indexOf('\n') >= 0) {
+                let offset = pending.indexOf('\n');
+                yield pending.slice(0, offset);
+                pending = pending.slice(offset + 1);
+            }
+        }
+    }
+    finally {
+        stream.releaseLock();
+        if (!stream.closed) { // Stop generation
+            await stream.cancel();
+        }
+        controller.abort();
+    }
+}
+exports.lineGenerator = lineGenerator;
+
+
+/***/ }),
+/* 19 */
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.countSymbol = exports.trimEndBlank = exports.trimIndent = exports.indentWidth = exports.isBlank = exports.countLines = void 0;
+function countLines(src) {
+    return countSymbol(src, '\n') + 1;
+}
+exports.countLines = countLines;
+function isBlank(src) {
+    return src.trim().length === 0;
+}
+exports.isBlank = isBlank;
+function indentWidth(src) {
+    for (let i = 0; i < src.length; i++) {
+        if (!isBlank(src[i])) {
+            return i;
+        }
+    }
+    return src.length;
+}
+exports.indentWidth = indentWidth;
+function trimIndent(src) {
+    // Prase lines
+    let lines = src.split('\n');
+    if (lines.length === 0) {
+        return '';
+    }
+    if (lines.length === 1) {
+        return lines[0].trim();
+    }
+    // Remove first and last empty line
+    if (isBlank(lines[0])) {
+        lines = lines.slice(1);
+    }
+    if (isBlank(lines[lines.length - 1])) {
+        lines = lines.slice(0, lines.length - 1);
+    }
+    if (lines.length === 0) {
+        return '';
+    }
+    // Find minimal indent
+    let indents = lines.filter((v) => !isBlank(v)).map((v) => indentWidth(v));
+    let minimal = indents.length > 0 ? Math.min(...indents) : 0;
+    // Trim indent
+    return lines.map((v) => isBlank(v) ? '' : v.slice(minimal).trimEnd()).join('\n');
+}
+exports.trimIndent = trimIndent;
+function trimEndBlank(src) {
+    let lines = src.split('\n');
+    for (let i = lines.length - 1; i++; i >= 0) {
+        if (isBlank(lines[i])) {
+            lines.splice(i);
+        }
+    }
+    return lines.join('\n');
+}
+exports.trimEndBlank = trimEndBlank;
+function countSymbol(src, char) {
+    let res = 0;
+    for (let i = 0; i < src.length; i++) {
+        if (src[i] === char) {
+            res++;
+        }
+    }
+    return res;
+}
+exports.countSymbol = countSymbol;
+
+
+/***/ }),
+/* 20 */
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.adaptPrompt = void 0;
+function adaptPrompt(args) {
+    // Common non FIM mode
+    // if (!args.suffix) {
+    //     return {
+    //         prompt: args.prefix,
+    //         stop: [`<END>`]
+    //     };
+    // }
+    // Starcoder FIM
+    if (args.format === 'deepseek') {
+        return {
+            prompt: `<｜fim▁begin｜>${args.prefix}<｜fim▁hole｜>${args.suffix}<｜fim▁end｜>`,
+            stop: [`<｜fim▁begin｜>`, `<｜fim▁hole｜>`, `<｜fim▁end｜>`, `<END>`]
+        };
+    }
+    // Stable code FIM
+    if (args.format === 'stable-code') {
+        return {
+            prompt: `<fim_prefix>${args.prefix}<fim_suffix>${args.suffix}<fim_middle>`,
+            stop: [`<|endoftext|>`]
+        };
+    }
+    // Codellama FIM
+    return {
+        prompt: `<PRE> ${args.prefix} <SUF> ${args.suffix} <MID>`,
+        stop: [`<END>`, `<EOD>`, `<EOT>`]
+    };
+}
+exports.adaptPrompt = adaptPrompt;
+
+
+/***/ }),
+/* 21 */
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+"use strict";
+
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.preparePrompt = void 0;
+const vscode_1 = __importDefault(__webpack_require__(1));
+const detectLanguage_1 = __webpack_require__(22);
+const fileHeaders_1 = __webpack_require__(25);
+const languages_1 = __webpack_require__(24);
+const config_1 = __webpack_require__(27);
+var decoder = new TextDecoder("utf8");
+function getNotebookDocument(document) {
+    return vscode_1.default.workspace.notebookDocuments
+        .find(x => x.uri.path === document.uri.path);
+}
+async function preparePrompt(document, position, context, addFilename = true, charLimit = 200) {
+    // Load document text
+    let text = document.getText();
+    let offset = document.offsetAt(position);
+    let prefix = text.slice(0, offset);
+    let suffix = text.slice(offset);
+    let notebookConfig = config_1.config.notebook;
+    // If this is a notebook, add the surrounding cells to the prefix and suffix
+    let notebookDocument = getNotebookDocument(document);
+    let language = (0, detectLanguage_1.detectLanguage)(document.uri.fsPath, document.languageId);
+    let commentStart = undefined;
+    if (language) {
+        commentStart = languages_1.languages[language].comment?.start;
+    }
+    if (notebookDocument) {
+        let beforeCurrentCell = true;
+        let prefixCells = "";
+        let suffixCells = "";
+        notebookDocument.getCells().forEach((cell) => {
+            let out = "";
+            if (cell.document.uri.fragment === document.uri.fragment) {
+                beforeCurrentCell = false; // switch to suffix mode
+                return;
+            }
+            // add the markdown cell output to the prompt as a comment
+            if (cell.kind === vscode_1.default.NotebookCellKind.Markup && commentStart) {
+                if (notebookConfig.includeMarkup) {
+                    for (const line of cell.document.getText().split('\n')) {
+                        out += `\n${commentStart}${line}`;
+                    }
+                }
+            }
+            else {
+                out += cell.document.getText();
+            }
+            // if there is any outputs add them to the prompt as a comment
+            const addCellOutputs = notebookConfig.includeCellOutputs
+                && beforeCurrentCell
+                && cell.kind === vscode_1.default.NotebookCellKind.Code
+                && commentStart;
+            if (addCellOutputs) {
+                let cellOutputs = cell.outputs
+                    .map(x => x.items
+                    .filter(x => x.mime === 'text/plain')
+                    .map(x => decoder.decode(x.data))
+                    .map(x => x.slice(0, notebookConfig.cellOutputLimit).split('\n')))
+                    .flat(3);
+                if (cellOutputs.length > 0) {
+                    out += `\n${commentStart}Output:`;
+                    for (const line of cellOutputs) {
+                        out += `\n${commentStart}${line}`;
+                    }
+                }
+            }
+            // update the prefix/suffix
+            if (beforeCurrentCell) {
+                prefixCells += out;
+            }
+            else {
+                suffixCells += out;
+            }
+        });
+        prefix = prefixCells + prefix;
+        suffix = suffix + suffixCells;
+    }
+    // Trim suffix
+    // If suffix is too small it is safe to assume that it could be ignored which would allow us to use
+    // more powerful completition instead of in middle one
+    // if (suffix.length < 256) {
+    //     suffix = null;
+    // }
+    // Add filename and language to prefix
+    // NOTE: Most networks don't have a concept of filenames and expected language, but we expect that some files in training set has something in title that 
+    //       would indicate filename and language
+    // NOTE: If we can't detect language, we could ignore this since the number of languages that need detection is limited
+    if (language && addFilename) {
+        prefix = (0, fileHeaders_1.fileHeaders)(prefix, document.uri.fsPath, languages_1.languages[language]);
+    }
+    prefix = prefix.slice(-500);
+    return {
+        prefix,
+        suffix,
+    };
+}
+exports.preparePrompt = preparePrompt;
+
+
+/***/ }),
+/* 22 */
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+"use strict";
+
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.detectLanguage = void 0;
+const path_1 = __importDefault(__webpack_require__(23));
+const languages_1 = __webpack_require__(24);
+let aliases = {
+    'typescriptreact': 'typescript',
+    'javascriptreact': 'javascript',
+    'jsx': 'javascript'
+};
+function detectLanguage(uri, languageId) {
+    // Resolve aliases
+    if (!!languageId && aliases[languageId]) {
+        return aliases[languageId];
+    }
+    // Resolve using language id
+    if (!!languageId && !!languages_1.languages[languageId]) {
+        return languageId;
+    }
+    // Resolve using filename and extension
+    let basename = path_1.default.basename(uri);
+    let extname = path_1.default.extname(basename).toLowerCase();
+    // Check extensions
+    for (let lang in languages_1.languages) {
+        let k = languages_1.languages[lang];
+        for (let ex of k.extensions) {
+            if (extname === ex) {
+                return lang;
+            }
+        }
+    }
+    // Return result
+    return null;
+}
+exports.detectLanguage = detectLanguage;
+
+
+/***/ }),
+/* 23 */
+/***/ ((module) => {
+
+"use strict";
+module.exports = require("path");
+
+/***/ }),
+/* 24 */
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+//
+// Well Known Languages
+//
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.languages = void 0;
+//
+// List of well known languages
+// 
+// Extensions from: https://github.com/github-linguist/linguist/blob/master/lib/linguist/languages.yml
+//
+exports.languages = {
+    // Web languages
+    typescript: {
+        name: 'Typescript',
+        extensions: ['.ts', '.tsx', '.cts', '.mts'],
+        comment: { start: '//' }
+    },
+    javascript: {
+        name: 'Javascript',
+        extensions: ['.js', '.jsx', '.cjs'],
+        comment: { start: '//' }
+    },
+    html: {
+        name: 'HTML',
+        extensions: ['.htm', '.html'],
+        comment: { start: '<!--', end: '-->' }
+    },
+    css: {
+        name: 'CSS',
+        extensions: ['.css', '.scss', '.sass', '.less'],
+        // comment: { start: '/*', end: '*/' } // Disable comments for CSS - not useful anyway
+    },
+    json: {
+        name: 'JSON',
+        extensions: ['.json', '.jsonl', '.geojson'],
+        // comment: { start: '//' } // Disable comments for CSS - not useful anyway
+    },
+    yaml: {
+        name: 'YAML',
+        extensions: ['.yml', '.yaml'],
+        comment: { start: '#' }
+    },
+    xml: {
+        name: 'XML',
+        extensions: ['.xml'],
+        comment: { start: '<!--', end: '-->' }
+    },
+    // Generic languages
+    java: {
+        name: 'Java',
+        extensions: ['.java'],
+        comment: { start: '//' }
+    },
+    kotlin: {
+        name: 'Kotlin',
+        extensions: ['.kt', '.ktm', '.kts'],
+        comment: { start: '//' }
+    },
+    swift: {
+        name: 'Swift',
+        extensions: ['.swift'],
+        comment: { start: '//' }
+    },
+    "objective-c": {
+        name: 'Objective C',
+        extensions: ['.h', '.m', '.mm'],
+        comment: { start: '//' }
+    },
+    rust: {
+        name: 'Rust',
+        extensions: ['.rs', '.rs.in'],
+        comment: { start: '//' }
+    },
+    python: {
+        name: 'Python',
+        extensions: ['.py', 'ipynb'],
+        comment: { start: '#' }
+    },
+    c: {
+        name: 'C',
+        extensions: ['.c', '.h'],
+        comment: { start: '//' }
+    },
+    cpp: {
+        name: 'C++',
+        extensions: ['.cpp', '.h'],
+        comment: { start: '//' }
+    },
+    go: {
+        name: 'Go',
+        extensions: ['.go'],
+        comment: { start: '//' }
+    },
+    php: {
+        name: 'PHP',
+        extensions: ['.aw', '.ctp', '.fcgi', '.inc', '.php', '.php3', '.php4', '.php5', '.phps', '.phpt'],
+        comment: { start: '//' }
+    },
+    // Shell
+    bat: {
+        name: 'BAT file',
+        extensions: ['.bat', '.cmd'],
+        comment: { start: 'REM' }
+    },
+    shellscript: {
+        name: 'Shell',
+        extensions: ['.bash', '.sh'],
+        comment: { start: '#' }
+    }
+};
+
+
+/***/ }),
+/* 25 */
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.fileHeaders = void 0;
+const comment_1 = __webpack_require__(26);
+function fileHeaders(content, uri, language) {
+    let res = content;
+    if (language) {
+        // Add path marker
+        let pathMarker = (0, comment_1.comment)('Path: ' + uri, language);
+        if (pathMarker) {
+            res = pathMarker + '\n' + res;
+        }
+        // Add language marker
+        let typeMarker = (0, comment_1.comment)('Language: ' + language.name, language);
+        if (typeMarker) {
+            res = typeMarker + '\n' + res;
+        }
+    }
+    return res;
+}
+exports.fileHeaders = fileHeaders;
+
+
+/***/ }),
+/* 26 */
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.comment = void 0;
+function comment(text, language) {
+    if (language.comment) {
+        if (language.comment.end) {
+            return `${language.comment.start} ${text} ${language.comment.end}`;
+        }
+        else {
+            return `${language.comment.start} ${text}`;
+        }
+    }
+    return null;
+}
+exports.comment = comment;
+
+
+/***/ }),
+/* 27 */
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+"use strict";
+
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.config = void 0;
+const vscode_1 = __importDefault(__webpack_require__(1));
+class Config {
+    // Inference
+    get inference() {
+        let config = this.#config;
+        let aiProvider = config.get('aiProvider').trim();
+        if (aiProvider === '') {
+            aiProvider = 'dAppForge';
+        }
+        // Load endpoint
+        let endpoint = config.get('endpoint').trim();
+        if (endpoint.endsWith('/')) {
+            endpoint = endpoint.slice(0, endpoint.length - 1).trim();
+        }
+        if (endpoint === '') {
+            endpoint = 'http://127.0.0.1:11434';
+        }
+        let bearerToken = config.get('bearerToken');
+        // Load general paremeters
+        let maxLines = config.get('maxLines');
+        let maxTokens = config.get('maxTokens');
+        let temperature = config.get('temperature');
+        // Load model
+        let modelName = config.get('model');
+        let modelFormat = 'codellama';
+        if (modelName === 'custom') {
+            modelName = config.get('custom.model');
+            modelFormat = config.get('cutom.format');
+        }
+        else {
+            if (modelName.startsWith('deepseek-coder')) {
+                modelFormat = 'deepseek';
+            }
+            else if (modelName.startsWith('stable-code')) {
+                modelFormat = 'stable-code';
+            }
+        }
+        let delay = config.get('delay');
+        return {
+            aiProvider,
+            endpoint,
+            bearerToken,
+            maxLines,
+            maxTokens,
+            temperature,
+            modelName,
+            modelFormat,
+            delay
+        };
+    }
+    // Notebook
+    get notebook() {
+        let config = vscode_1.default.workspace.getConfiguration('notebook');
+        let includeMarkup = config.get('includeMarkup');
+        let includeCellOutputs = config.get('includeCellOutputs');
+        let cellOutputLimit = config.get('cellOutputLimit');
+        return {
+            includeMarkup,
+            includeCellOutputs,
+            cellOutputLimit,
+        };
+    }
+    get #config() {
+        return vscode_1.default.workspace.getConfiguration('inference');
+    }
+    ;
+}
+exports.config = new Config();
+
+
+/***/ }),
+/* 28 */
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.AsyncLock = void 0;
+class AsyncLock {
+    permits = 1;
+    promiseResolverQueue = [];
+    async inLock(func) {
+        try {
+            await this.lock();
+            return await func();
+        }
+        finally {
+            this.unlock();
+        }
+    }
+    async lock() {
+        if (this.permits > 0) {
+            this.permits = this.permits - 1;
+            return;
+        }
+        await new Promise(resolve => this.promiseResolverQueue.push(resolve));
+    }
+    unlock() {
+        this.permits += 1;
+        if (this.permits > 1 && this.promiseResolverQueue.length > 0) {
+            throw new Error('this.permits should never be > 0 when there is someone waiting.');
+        }
+        else if (this.permits === 1 && this.promiseResolverQueue.length > 0) {
+            // If there is someone else waiting, immediately consume the permit that was released
+            // at the beginning of this function and let the waiting function resume.
+            this.permits -= 1;
+            const nextResolver = this.promiseResolverQueue.shift();
+            // Resolve on the next tick
+            if (nextResolver) {
+                setTimeout(() => {
+                    nextResolver(true);
+                }, 0);
+            }
+        }
+    }
+}
+exports.AsyncLock = AsyncLock;
+
+
+/***/ }),
+/* 29 */
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.setPromptToCache = exports.getFromPromptCache = void 0;
+// Remove all newlines, double spaces, etc
+function normalizeText(src) {
+    src = src.split('\n').join(' ');
+    src = src.replace(/\s+/gm, ' ');
+    return src;
+}
+function extractPromptCacheKey(args) {
+    if (args.suffix) {
+        return normalizeText(args.prefix + ' ##CURSOR## ' + args.suffix);
+    }
+    else {
+        return normalizeText(args.prefix);
+    }
+}
+// TODO: make it LRU
+let cache = {};
+function getFromPromptCache(args) {
+    const key = extractPromptCacheKey(args);
+    return cache[key];
+}
+exports.getFromPromptCache = getFromPromptCache;
+function setPromptToCache(args) {
+    const key = extractPromptCacheKey(args);
+    cache[key] = args.value;
+}
+exports.setPromptToCache = setPromptToCache;
+
+
+/***/ }),
+/* 30 */
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+"use strict";
+
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.isNotNeeded = exports.isSupported = void 0;
+const path_1 = __importDefault(__webpack_require__(23));
+function isSupported(doc, aiProvider) {
+    return (doc.uri.scheme === 'file' ||
+        doc.uri.scheme === 'vscode-notebook-cell' ||
+        doc.uri.scheme === 'vscode-remote') &&
+        (aiProvider !== 'dAppForge' || (aiProvider === 'dAppForge' && path_1.default.extname(doc.uri.fsPath) === ".rs"));
+}
+exports.isSupported = isSupported;
+function isNotNeeded(doc, position, context) {
+    // Avoid autocomplete on empty lines
+    // const line = doc.lineAt(position.line).text.trim();
+    // if (line.trim() === '') {
+    //     return true;
+    // }
+    // Avoid autocomplete when system menu is shown (ghost text is hidden anyway)
+    // if (context.selectedCompletionInfo) {
+    //     return true;
+    // }
+    return false;
+}
+exports.isNotNeeded = isNotNeeded;
+
+
+/***/ }),
+/* 31 */
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.ollamaCheckModel = void 0;
+async function ollamaCheckModel(endpoint, model, bearerToken) {
+    // Check if exists
+    let res = await fetch(endpoint + '/api/tags', {
+        headers: bearerToken ? {
+            Authorization: `Bearer ${bearerToken}`,
+        } : {},
+    });
+    if (!res.ok) {
+        console.log(await res.text());
+        console.log(endpoint + '/api/tags');
+        throw Error('Network response was not ok.');
+    }
+    let body = await res.json();
+    if (body.models.find((v) => v.name === model)) {
+        return true;
+    }
+    else {
+        return false;
+    }
+}
+exports.ollamaCheckModel = ollamaCheckModel;
+
+
+/***/ }),
+/* 32 */
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.ollamaDownloadModel = void 0;
+const lineGenerator_1 = __webpack_require__(18);
+async function ollamaDownloadModel(endpoint, model, bearerToken) {
+    console.log('Downloading model from ollama: ' + model);
+    for await (let line of (0, lineGenerator_1.lineGenerator)(endpoint + '/api/pull', { name: model }, bearerToken)) {
+        console.log('[DOWNLOAD] ' + line);
+    }
+}
+exports.ollamaDownloadModel = ollamaDownloadModel;
+
+
+/***/ })
+/******/ 	]);
+/************************************************************************/
+/******/ 	// The module cache
+/******/ 	var __webpack_module_cache__ = {};
+/******/ 	
+/******/ 	// The require function
+/******/ 	function __webpack_require__(moduleId) {
+/******/ 		// Check if module is in cache
+/******/ 		var cachedModule = __webpack_module_cache__[moduleId];
+/******/ 		if (cachedModule !== undefined) {
+/******/ 			return cachedModule.exports;
+/******/ 		}
+/******/ 		// Create a new module (and put it into the cache)
+/******/ 		var module = __webpack_module_cache__[moduleId] = {
+/******/ 			// no module.id needed
+/******/ 			// no module.loaded needed
+/******/ 			exports: {}
+/******/ 		};
+/******/ 	
+/******/ 		// Execute the module function
+/******/ 		__webpack_modules__[moduleId].call(module.exports, module, module.exports, __webpack_require__);
+/******/ 	
+/******/ 		// Return the exports of the module
+/******/ 		return module.exports;
+/******/ 	}
+/******/ 	
+/************************************************************************/
+/******/ 	/* webpack/runtime/define property getters */
+/******/ 	(() => {
+/******/ 		// define getter functions for harmony exports
+/******/ 		__webpack_require__.d = (exports, definition) => {
+/******/ 			for(var key in definition) {
+/******/ 				if(__webpack_require__.o(definition, key) && !__webpack_require__.o(exports, key)) {
+/******/ 					Object.defineProperty(exports, key, { enumerable: true, get: definition[key] });
+/******/ 				}
+/******/ 			}
+/******/ 		};
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/hasOwnProperty shorthand */
+/******/ 	(() => {
+/******/ 		__webpack_require__.o = (obj, prop) => (Object.prototype.hasOwnProperty.call(obj, prop))
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/make namespace object */
+/******/ 	(() => {
+/******/ 		// define __esModule on exports
+/******/ 		__webpack_require__.r = (exports) => {
+/******/ 			if(typeof Symbol !== 'undefined' && Symbol.toStringTag) {
+/******/ 				Object.defineProperty(exports, Symbol.toStringTag, { value: 'Module' });
+/******/ 			}
+/******/ 			Object.defineProperty(exports, '__esModule', { value: true });
+/******/ 		};
+/******/ 	})();
+/******/ 	
+/************************************************************************/
+/******/ 	
+/******/ 	// startup
+/******/ 	// Load entry module and return exports
+/******/ 	// This entry module is referenced by other modules so it can't be inlined
+/******/ 	var __webpack_exports__ = __webpack_require__(0);
+/******/ 	module.exports = __webpack_exports__;
+/******/ 	
+/******/ })()
+;
+//# sourceMappingURL=extension.js.map

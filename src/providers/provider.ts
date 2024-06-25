@@ -89,6 +89,7 @@ export class PromptProvider implements vscode.InlineCompletionItemProvider {
 
     async provideInlineCompletionItems(document: vscode.TextDocument, position: vscode.Position, context: vscode.InlineCompletionContext, token: vscode.CancellationToken): Promise<vscode.InlineCompletionItem[] | vscode.InlineCompletionList | undefined | null> {
         if (!await this.delayCompletion(config.inference.delay, token) || this._solution_accepted) {
+            if (this._solution_accepted) { console.log(`xxxxxxx do not query AI as solution was accepted`); }
             // Do not do another AI request when a solution is accepted
             this._solution_accepted = false;
             return;
@@ -127,7 +128,7 @@ export class PromptProvider implements vscode.InlineCompletionItemProvider {
             return await this.lock.inLock(async () => {
 
                 // Prepare context
-                let prepared = await preparePrompt(document, position, context);
+                let prepared = await preparePrompt(document, position, context, inferenceConfig.aiProvider !== 'dAppForge');
                 if (token.isCancellationRequested) {
                     console.log(`Canceled before AI completion.`);
                     return;
@@ -136,7 +137,7 @@ export class PromptProvider implements vscode.InlineCompletionItemProvider {
                 // Result
                 let res: string | null = null;
 
-                console.log(`prepared.prefix: ${prepared.prefix} prepared.suffix: ${prepared.suffix}`);
+                console.log(`<><><><>prepared.prefix: ${prepared.prefix} prepared.suffix: ${prepared.suffix} prepared.prefix.length: ${prepared.prefix?.length}`);
 
                 // Check if in cache
                 let cached = getFromPromptCache({

@@ -11,7 +11,11 @@ function getNotebookDocument(document: vscode.TextDocument): vscode.NotebookDocu
         .find(x => x.uri.path === document.uri.path);
 }
 
-export async function preparePrompt(document: vscode.TextDocument, position: vscode.Position, context: vscode.InlineCompletionContext) {
+export async function preparePrompt(document: vscode.TextDocument, 
+    position: vscode.Position, 
+    context: vscode.InlineCompletionContext, 
+    addFilename=true,
+    charLimit=200) {
 
     // Load document text
     let text = document.getText();
@@ -99,9 +103,11 @@ export async function preparePrompt(document: vscode.TextDocument, position: vsc
     // NOTE: Most networks don't have a concept of filenames and expected language, but we expect that some files in training set has something in title that 
     //       would indicate filename and language
     // NOTE: If we can't detect language, we could ignore this since the number of languages that need detection is limited
-    if (language) {
+    if (language && addFilename) {
         prefix = fileHeaders(prefix, document.uri.fsPath, languages[language]);
     }
+
+    prefix = prefix.slice(-500);
 
     return {
         prefix,
