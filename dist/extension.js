@@ -825,6 +825,7 @@ class PromptProvider {
     statusbar;
     context;
     _paused = true;
+    _solution_accepted = false;
     _authorised = false;
     _status = { icon: "chip", text: "dAppForge" };
     constructor(statusbar, context) {
@@ -879,7 +880,9 @@ class PromptProvider {
         return true;
     }
     async provideInlineCompletionItems(document, position, context, token) {
-        if (!await this.delayCompletion(config_1.config.inference.delay, token)) {
+        if (!await this.delayCompletion(config_1.config.inference.delay, token) || this._solution_accepted) {
+            // Do not do another AI request when a solution is accepted
+            this._solution_accepted = false;
             return;
         }
         try {
@@ -1064,6 +1067,7 @@ class PromptProvider {
                     type: "update-token-count",
                     value: json.tokenCount
                 });
+                this._solution_accepted = true;
             }
             catch (e) {
                 console.log('Error when trying to charge for the AI completion:', e);

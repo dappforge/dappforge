@@ -22,6 +22,7 @@ export class PromptProvider implements vscode.InlineCompletionItemProvider {
     statusbar: vscode.StatusBarItem;
     context: vscode.ExtensionContext;
     private _paused: boolean = true;
+    private _solution_accepted = false;
     private _authorised: boolean = false;
     private _status: Status = { icon: "chip", text: "dAppForge" };
 
@@ -87,7 +88,9 @@ export class PromptProvider implements vscode.InlineCompletionItemProvider {
     }
 
     async provideInlineCompletionItems(document: vscode.TextDocument, position: vscode.Position, context: vscode.InlineCompletionContext, token: vscode.CancellationToken): Promise<vscode.InlineCompletionItem[] | vscode.InlineCompletionList | undefined | null> {
-        if (!await this.delayCompletion(config.inference.delay, token)) {
+        if (!await this.delayCompletion(config.inference.delay, token) || this._solution_accepted) {
+            // Do not do another AI request when a solution is accepted
+            this._solution_accepted = false;
             return;
         }
 
@@ -298,6 +301,7 @@ export class PromptProvider implements vscode.InlineCompletionItemProvider {
                 sidebarProvider.postMessageToWebview({ 
                     type: "update-token-count", 
                     value: json.tokenCount });
+                this._solution_accepted = true;
     
             } catch (e) {
                 console.log('Error when trying to charge for the AI completion:', e);
