@@ -1177,8 +1177,9 @@ async function autocomplete(args) {
 }
 exports.autocomplete = autocomplete;
 async function dappforgeAutocomplete(args) {
-    const prompt = { "prefix_code": args.prefix };
-    console.log(`args.prefix: ${JSON.stringify(args, undefined, 2)}`);
+    const preparedPrompt = prepareAIPrompt(args.prefix);
+    const prompt = { "prefix_code": preparedPrompt };
+    console.log(`prompt: ${JSON.stringify(prompt, undefined, 2)}`);
     const url = `${TokenManager_1.TokenManager.getToken(TokenManager_1.API_BASE_URL)}/ai/generate_code/${TokenManager_1.TokenManager.getToken(TokenManager_1.USER_ID_KEY)}`;
     const basicAuthHeader = `Basic ${(0, utils_1.getBasicAuthToken)()}`;
     console.log(`url: ${url} prompt: ${JSON.stringify(prompt)} auth: ${basicAuthHeader}`);
@@ -1229,6 +1230,7 @@ async function dappforgeAutocomplete(args) {
     let code = '';
     if (data.hasOwnProperty('generated_code')) {
         code = data.generated_code;
+        code = code.replace(/\\n/g, '\n');
         // Trim ends of all lines since sometimes the AI completion will add extra spaces
         code = code.split('\n').map((v) => v.trimEnd()).join('\n');
         console.log(`completed_code: ${code}`);
@@ -1237,6 +1239,19 @@ async function dappforgeAutocomplete(args) {
     return code;
 }
 exports.dappforgeAutocomplete = dappforgeAutocomplete;
+function prepareAIPrompt(input, limit = 500) {
+    // Step 1: Trim the input to the last `limit` characters
+    const trimmedInput = input.slice(-limit);
+    // Step 2: Adjust start to ensure it begins with a complete word
+    // Find the index of the first space followed by a word character in the trimmed input
+    const startIndex = trimmedInput.search(/\s\w/);
+    const adjustedInput = startIndex !== -1 ? trimmedInput.slice(startIndex + 1) : trimmedInput;
+    // Optional: Adjust to ensure starting with a complete sentence
+    const sentenceStartIndex = trimmedInput.search(/\. \w/);
+    const adjustedInputForSentence = sentenceStartIndex !== -1 ? trimmedInput.slice(sentenceStartIndex + 2) : adjustedInput;
+    // Return the adjusted input
+    return adjustedInput.trim();
+}
 
 
 /***/ }),
@@ -1460,7 +1475,7 @@ function getNotebookDocument(document) {
     return vscode_1.default.workspace.notebookDocuments
         .find(x => x.uri.path === document.uri.path);
 }
-async function preparePrompt(document, position, context, addFilename = true, charLimit = 200) {
+async function preparePrompt(document, position, context, addFilename = true) {
     // Load document text
     let text = document.getText();
     let offset = document.offsetAt(position);
@@ -1538,7 +1553,6 @@ async function preparePrompt(document, position, context, addFilename = true, ch
     if (language && addFilename) {
         prefix = (0, fileHeaders_1.fileHeaders)(prefix, document.uri.fsPath, languages_1.languages[language]);
     }
-    prefix = prefix.slice(-500);
     return {
         prefix,
         suffix,

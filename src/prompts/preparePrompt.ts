@@ -14,8 +14,7 @@ function getNotebookDocument(document: vscode.TextDocument): vscode.NotebookDocu
 export async function preparePrompt(document: vscode.TextDocument, 
     position: vscode.Position, 
     context: vscode.InlineCompletionContext, 
-    addFilename=true,
-    charLimit=200) {
+    addFilename=true) {
 
     // Load document text
     let text = document.getText();
@@ -106,8 +105,6 @@ export async function preparePrompt(document: vscode.TextDocument,
     if (language && addFilename) {
         prefix = fileHeaders(prefix, document.uri.fsPath, languages[language]);
     }
-
-    prefix = prefix.slice(-500);
 
     return {
         prefix,

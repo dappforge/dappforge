@@ -2,7 +2,7 @@
   "name": "dappforge",
   "displayName": "dAppForge",
   "description": "AI tool tailored for blockchain developers to build better dApps faster, reducing development time.",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "icon:": "media/dAppforge-mark.png",
   "publisher": "dappforge",
   "repository": {
@@ -152,7 +152,7 @@
         },
         "inference.delay": {
           "type": "number",
-          "default": 250,
+          "default": 500,
           "description": "Completion request delay in milliseconds (0 - no delay, -1 - no completions).",
           "order": 8,
           "minimum": -1,
