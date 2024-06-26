@@ -913,8 +913,11 @@ class PromptProvider {
             }
             // Execute in lock
             return await this.lock.inLock(async () => {
+                if (this._solution_accepted) {
+                    return;
+                }
                 // Prepare context
-                let prepared = await (0, preparePrompt_1.preparePrompt)(document, position, context, inferenceConfig.aiProvider !== 'dAppForge');
+                let prepared = await (0, preparePrompt_1.preparePrompt)(document, position, context);
                 if (token.isCancellationRequested) {
                     console.log(`Canceled before AI completion.`);
                     return;
@@ -1467,7 +1470,6 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.preparePrompt = void 0;
 const vscode_1 = __importDefault(__webpack_require__(1));
 const detectLanguage_1 = __webpack_require__(22);
-const fileHeaders_1 = __webpack_require__(25);
 const languages_1 = __webpack_require__(24);
 const config_1 = __webpack_require__(27);
 var decoder = new TextDecoder("utf8");
@@ -1475,7 +1477,7 @@ function getNotebookDocument(document) {
     return vscode_1.default.workspace.notebookDocuments
         .find(x => x.uri.path === document.uri.path);
 }
-async function preparePrompt(document, position, context, addFilename = true) {
+async function preparePrompt(document, position, context) {
     // Load document text
     let text = document.getText();
     let offset = document.offsetAt(position);
@@ -1550,9 +1552,9 @@ async function preparePrompt(document, position, context, addFilename = true) {
     // NOTE: Most networks don't have a concept of filenames and expected language, but we expect that some files in training set has something in title that 
     //       would indicate filename and language
     // NOTE: If we can't detect language, we could ignore this since the number of languages that need detection is limited
-    if (language && addFilename) {
-        prefix = (0, fileHeaders_1.fileHeaders)(prefix, document.uri.fsPath, languages_1.languages[language]);
-    }
+    //if (language && addFilename) {
+    //    prefix = fileHeaders(prefix, document.uri.fsPath, languages[language]);
+    //}
     return {
         prefix,
         suffix,
@@ -1732,56 +1734,8 @@ exports.languages = {
 
 
 /***/ }),
-/* 25 */
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.fileHeaders = void 0;
-const comment_1 = __webpack_require__(26);
-function fileHeaders(content, uri, language) {
-    let res = content;
-    if (language) {
-        // Add path marker
-        let pathMarker = (0, comment_1.comment)('Path: ' + uri, language);
-        if (pathMarker) {
-            res = pathMarker + '\n' + res;
-        }
-        // Add language marker
-        let typeMarker = (0, comment_1.comment)('Language: ' + language.name, language);
-        if (typeMarker) {
-            res = typeMarker + '\n' + res;
-        }
-    }
-    return res;
-}
-exports.fileHeaders = fileHeaders;
-
-
-/***/ }),
-/* 26 */
-/***/ ((__unused_webpack_module, exports) => {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.comment = void 0;
-function comment(text, language) {
-    if (language.comment) {
-        if (language.comment.end) {
-            return `${language.comment.start} ${text} ${language.comment.end}`;
-        }
-        else {
-            return `${language.comment.start} ${text}`;
-        }
-    }
-    return null;
-}
-exports.comment = comment;
-
-
-/***/ }),
+/* 25 */,
+/* 26 */,
 /* 27 */
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 

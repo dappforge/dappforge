@@ -127,8 +127,10 @@ export class PromptProvider implements vscode.InlineCompletionItemProvider {
             // Execute in lock
             return await this.lock.inLock(async () => {
 
+                if (this._solution_accepted) { return; }
+
                 // Prepare context
-                let prepared = await preparePrompt(document, position, context, inferenceConfig.aiProvider !== 'dAppForge');
+                let prepared = await preparePrompt(document, position, context);
                 if (token.isCancellationRequested) {
                     console.log(`Canceled before AI completion.`);
                     return;
