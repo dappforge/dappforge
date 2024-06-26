@@ -271,9 +271,10 @@ export class PromptProvider implements vscode.InlineCompletionItemProvider {
     async completionAccepted(sidebarProvider: SidebarProvider, cost: number) {
         if (TokenManager.loggedIn() && !this.paused) {
             console.log("Call endpoint to reduce count");
+            this._solution_accepted = true;
             try {
                 let res = await fetch(
-                `${TokenManager.getToken(API_BASE_URL)}/ai/reduce_token_count/${TokenManager.getToken(USER_ID_KEY)}`,
+                    `${TokenManager.getToken(API_BASE_URL)}/ai/reduce_token_count/${TokenManager.getToken(USER_ID_KEY)}`,
                 {
                     method: "POST",
                     body: JSON.stringify({ cost: cost }),
@@ -301,9 +302,7 @@ export class PromptProvider implements vscode.InlineCompletionItemProvider {
                 }
                 sidebarProvider.postMessageToWebview({ 
                     type: "update-token-count", 
-                    value: json.tokenCount });
-                this._solution_accepted = true;
-    
+                    value: json.tokenCount });    
             } catch (e) {
                 console.log('Error when trying to charge for the AI completion:', e);
                 vscode.window.showErrorMessage((e as Error).message);

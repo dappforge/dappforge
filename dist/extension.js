@@ -1042,6 +1042,7 @@ class PromptProvider {
     async completionAccepted(sidebarProvider, cost) {
         if (TokenManager_1.TokenManager.loggedIn() && !this.paused) {
             console.log("Call endpoint to reduce count");
+            this._solution_accepted = true;
             try {
                 let res = await fetch(`${TokenManager_1.TokenManager.getToken(TokenManager_1.API_BASE_URL)}/ai/reduce_token_count/${TokenManager_1.TokenManager.getToken(TokenManager_1.USER_ID_KEY)}`, {
                     method: "POST",
@@ -1070,7 +1071,6 @@ class PromptProvider {
                     type: "update-token-count",
                     value: json.tokenCount
                 });
-                this._solution_accepted = true;
             }
             catch (e) {
                 console.log('Error when trying to charge for the AI completion:', e);
@@ -1239,7 +1239,7 @@ async function dappforgeAutocomplete(args) {
     return code;
 }
 exports.dappforgeAutocomplete = dappforgeAutocomplete;
-function prepareAIPrompt(input, limit = 500) {
+function prepareAIPrompt(input, limit = 1000) {
     // Step 1: Trim the input to the last `limit` characters
     const trimmedInput = input.slice(-limit);
     // Step 2: Adjust start to ensure it begins with a complete word
