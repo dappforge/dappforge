@@ -22,8 +22,9 @@ export class PromptProvider implements vscode.InlineCompletionItemProvider {
     statusbar: vscode.StatusBarItem;
     context: vscode.ExtensionContext;
     private _paused: boolean = true;
-    private _solution_accepted = false;
+    private _solution_accepted: boolean = false;
     private _authorised: boolean = false;
+    private _processing_request: boolean = false;
     private _status: Status = { icon: "chip", text: "dAppForge" };
 
     constructor(
@@ -88,7 +89,7 @@ export class PromptProvider implements vscode.InlineCompletionItemProvider {
     }
 
     async provideInlineCompletionItems(document: vscode.TextDocument, position: vscode.Position, context: vscode.InlineCompletionContext, token: vscode.CancellationToken): Promise<vscode.InlineCompletionItem[] | vscode.InlineCompletionList | undefined | null> {
-        if (!await this.delayCompletion(config.inference.delay, token) || this._solution_accepted) {
+        if (!await this.delayCompletion(config.inference.delay, token) || this._solution_accepted || this._processing_request) {
             if (this._solution_accepted) { console.log(`xxxxxxx do not query AI as solution was accepted`); }
             // Do not do another AI request when a solution is accepted
             this._solution_accepted = false;
@@ -124,8 +125,13 @@ export class PromptProvider implements vscode.InlineCompletionItemProvider {
                 return;
             }
 
+            console.log('Before lock');
+
+            this._processing_request = true;
+
             // Execute in lock
-            return await this.lock.inLock(async () => {
+            //return await this.lock.inLock(async () => {
+                console.log('In lock');
 
                 if (this._solution_accepted) { return; }
 
@@ -135,6 +141,8 @@ export class PromptProvider implements vscode.InlineCompletionItemProvider {
                     console.log(`Canceled before AI completion.`);
                     return;
                 }
+
+                console.log('Start to process AI request');
 
                 // Result
                 let res: string | null = null;
@@ -207,7 +215,7 @@ export class PromptProvider implements vscode.InlineCompletionItemProvider {
                             });
                         } else {
                             // Run AI completion
-                            console.log(`Running AI completion...`);
+                            console.log(`Running dAppForge AI completion...`);
                             res = await dappforgeAutocomplete({
                                 prefix: prepared.prefix,
                                 suffix: prepared.suffix,
@@ -263,10 +271,12 @@ export class PromptProvider implements vscode.InlineCompletionItemProvider {
 
                 // Nothing to complete
                 return;
-            });
+            //});
         } catch (e) {
             console.log('Error during inference:', e);
             vscode.window.showErrorMessage((e as Error).message);
+        } finally {
+            this._processing_request = false;
         }
     }
 

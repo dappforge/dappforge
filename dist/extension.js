@@ -827,6 +827,7 @@ class PromptProvider {
     _paused = true;
     _solution_accepted = false;
     _authorised = false;
+    _processing_request = false;
     _status = { icon: "chip", text: "dAppForge" };
     constructor(statusbar, context) {
         this.statusbar = statusbar;
@@ -880,7 +881,7 @@ class PromptProvider {
         return true;
     }
     async provideInlineCompletionItems(document, position, context, token) {
-        if (!await this.delayCompletion(config_1.config.inference.delay, token) || this._solution_accepted) {
+        if (!await this.delayCompletion(config_1.config.inference.delay, token) || this._solution_accepted || this._processing_request) {
             if (this._solution_accepted) {
                 console.log(`xxxxxxx do not query AI as solution was accepted`);
             }
@@ -911,135 +912,142 @@ class PromptProvider {
                 console.log(`Canceled before AI completion.`);
                 return;
             }
+            console.log('Before lock');
+            this._processing_request = true;
             // Execute in lock
-            return await this.lock.inLock(async () => {
-                if (this._solution_accepted) {
-                    return;
-                }
-                // Prepare context
-                let prepared = await (0, preparePrompt_1.preparePrompt)(document, position, context);
-                if (token.isCancellationRequested) {
-                    console.log(`Canceled before AI completion.`);
-                    return;
-                }
-                // Result
-                let res = null;
-                console.log(`<><><><>prepared.prefix: ${prepared.prefix} prepared.suffix: ${prepared.suffix} prepared.prefix.length: ${prepared.prefix?.length}`);
-                // Check if in cache
-                let cached = (0, promptCache_1.getFromPromptCache)({
-                    prefix: prepared.prefix,
-                    suffix: prepared.suffix
-                });
-                // If not cached
-                if (cached === undefined) {
-                    console.log('not in cache');
-                    // Update status
-                    this.update('sync~spin', 'dAppForge');
-                    try {
-                        console.log(`inferenceConfig.aiProvider: ${inferenceConfig.aiProvider}`);
-                        if (inferenceConfig.aiProvider === "Ollama") {
-                            // Check model exists
-                            let modelExists = await (0, ollamaCheckModel_1.ollamaCheckModel)(inferenceConfig.endpoint, inferenceConfig.modelName, inferenceConfig.bearerToken);
-                            if (token.isCancellationRequested) {
-                                console.log(`Canceled after AI completion.`);
+            //return await this.lock.inLock(async () => {
+            console.log('In lock');
+            if (this._solution_accepted) {
+                return;
+            }
+            // Prepare context
+            let prepared = await (0, preparePrompt_1.preparePrompt)(document, position, context);
+            if (token.isCancellationRequested) {
+                console.log(`Canceled before AI completion.`);
+                return;
+            }
+            console.log('Start to process AI request');
+            // Result
+            let res = null;
+            console.log(`<><><><>prepared.prefix: ${prepared.prefix} prepared.suffix: ${prepared.suffix} prepared.prefix.length: ${prepared.prefix?.length}`);
+            // Check if in cache
+            let cached = (0, promptCache_1.getFromPromptCache)({
+                prefix: prepared.prefix,
+                suffix: prepared.suffix
+            });
+            // If not cached
+            if (cached === undefined) {
+                console.log('not in cache');
+                // Update status
+                this.update('sync~spin', 'dAppForge');
+                try {
+                    console.log(`inferenceConfig.aiProvider: ${inferenceConfig.aiProvider}`);
+                    if (inferenceConfig.aiProvider === "Ollama") {
+                        // Check model exists
+                        let modelExists = await (0, ollamaCheckModel_1.ollamaCheckModel)(inferenceConfig.endpoint, inferenceConfig.modelName, inferenceConfig.bearerToken);
+                        if (token.isCancellationRequested) {
+                            console.log(`Canceled after AI completion.`);
+                            return;
+                        }
+                        // Download model if not exists
+                        if (!modelExists) {
+                            // Check if user asked to ignore download
+                            if (this.context.globalState.get('llama-coder-download-ignored') === inferenceConfig.modelName) {
+                                console.log(`Ingoring since user asked to ignore download.`);
                                 return;
                             }
-                            // Download model if not exists
-                            if (!modelExists) {
-                                // Check if user asked to ignore download
-                                if (this.context.globalState.get('llama-coder-download-ignored') === inferenceConfig.modelName) {
-                                    console.log(`Ingoring since user asked to ignore download.`);
-                                    return;
-                                }
-                                // Ask for download
-                                let download = await vscode_1.default.window.showInformationMessage(`Model ${inferenceConfig.modelName} is not downloaded. Do you want to download it? Answering "No" would require you to manually download model.`, 'Yes', 'No');
-                                if (download === 'No') {
-                                    console.log(`Ingoring since user asked to ignore download.`);
-                                    this.context.globalState.update('llama-coder-download-ignored', inferenceConfig.modelName);
-                                    return;
-                                }
-                                // Perform download
-                                this.update('sync~spin', 'Downloading');
-                                await (0, ollamaDownloadModel_1.ollamaDownloadModel)(inferenceConfig.endpoint, inferenceConfig.modelName, inferenceConfig.bearerToken);
-                                this.update('sync~spin', 'dAppForge');
-                            }
-                            if (token.isCancellationRequested) {
-                                console.log(`Canceled after AI completion.`);
+                            // Ask for download
+                            let download = await vscode_1.default.window.showInformationMessage(`Model ${inferenceConfig.modelName} is not downloaded. Do you want to download it? Answering "No" would require you to manually download model.`, 'Yes', 'No');
+                            if (download === 'No') {
+                                console.log(`Ingoring since user asked to ignore download.`);
+                                this.context.globalState.update('llama-coder-download-ignored', inferenceConfig.modelName);
                                 return;
                             }
-                            // Run AI completion
-                            console.log(`Running AI completion...`);
-                            res = await (0, autocomplete_1.autocomplete)({
-                                prefix: prepared.prefix,
-                                suffix: prepared.suffix,
-                                endpoint: inferenceConfig.endpoint,
-                                bearerToken: inferenceConfig.bearerToken,
-                                model: inferenceConfig.modelName,
-                                format: inferenceConfig.modelFormat,
-                                maxLines: inferenceConfig.maxLines,
-                                maxTokens: inferenceConfig.maxTokens,
-                                temperature: inferenceConfig.temperature,
-                                canceled: () => token.isCancellationRequested,
-                            });
+                            // Perform download
+                            this.update('sync~spin', 'Downloading');
+                            await (0, ollamaDownloadModel_1.ollamaDownloadModel)(inferenceConfig.endpoint, inferenceConfig.modelName, inferenceConfig.bearerToken);
+                            this.update('sync~spin', 'dAppForge');
                         }
-                        else {
-                            // Run AI completion
-                            console.log(`Running AI completion...`);
-                            res = await (0, autocomplete_1.dappforgeAutocomplete)({
-                                prefix: prepared.prefix,
-                                suffix: prepared.suffix,
-                                endpoint: inferenceConfig.endpoint,
-                                bearerToken: inferenceConfig.bearerToken,
-                                model: inferenceConfig.modelName,
-                                format: inferenceConfig.modelFormat,
-                                maxLines: inferenceConfig.maxLines,
-                                maxTokens: inferenceConfig.maxTokens,
-                                temperature: inferenceConfig.temperature,
-                                canceled: () => token.isCancellationRequested,
-                            });
+                        if (token.isCancellationRequested) {
+                            console.log(`Canceled after AI completion.`);
+                            return;
                         }
-                        console.log(`AI completion completed: ${res}`);
-                        console.log(`store in cache prepared.prefix: ${prepared.prefix} prepared.suffix: ${prepared.suffix} res: ${res}`);
-                        // Put to cache
-                        (0, promptCache_1.setPromptToCache)({
+                        // Run AI completion
+                        console.log(`Running AI completion...`);
+                        res = await (0, autocomplete_1.autocomplete)({
                             prefix: prepared.prefix,
                             suffix: prepared.suffix,
-                            value: res
+                            endpoint: inferenceConfig.endpoint,
+                            bearerToken: inferenceConfig.bearerToken,
+                            model: inferenceConfig.modelName,
+                            format: inferenceConfig.modelFormat,
+                            maxLines: inferenceConfig.maxLines,
+                            maxTokens: inferenceConfig.maxTokens,
+                            temperature: inferenceConfig.temperature,
+                            canceled: () => token.isCancellationRequested,
                         });
                     }
-                    finally {
-                        this.update('chip', 'dAppForge');
+                    else {
+                        // Run AI completion
+                        console.log(`Running dAppForge AI completion...`);
+                        res = await (0, autocomplete_1.dappforgeAutocomplete)({
+                            prefix: prepared.prefix,
+                            suffix: prepared.suffix,
+                            endpoint: inferenceConfig.endpoint,
+                            bearerToken: inferenceConfig.bearerToken,
+                            model: inferenceConfig.modelName,
+                            format: inferenceConfig.modelFormat,
+                            maxLines: inferenceConfig.maxLines,
+                            maxTokens: inferenceConfig.maxTokens,
+                            temperature: inferenceConfig.temperature,
+                            canceled: () => token.isCancellationRequested,
+                        });
                     }
+                    console.log(`AI completion completed: ${res}`);
+                    console.log(`store in cache prepared.prefix: ${prepared.prefix} prepared.suffix: ${prepared.suffix} res: ${res}`);
+                    // Put to cache
+                    (0, promptCache_1.setPromptToCache)({
+                        prefix: prepared.prefix,
+                        suffix: prepared.suffix,
+                        value: res
+                    });
                 }
-                else {
-                    if (cached !== null) {
-                        res = cached;
-                    }
+                finally {
+                    this.update('chip', 'dAppForge');
                 }
-                if (token.isCancellationRequested) {
-                    console.log(`Canceled after AI completion.`);
-                    return;
+            }
+            else {
+                if (cached !== null) {
+                    res = cached;
                 }
-                // Return result
-                if (res && res.trim() !== '') {
-                    console.log(`setting res at position: ${JSON.stringify(position, undefined, 2)}`);
-                    const completionItems = [];
-                    const completionItem = new vscode_1.default.InlineCompletionItem(res, new vscode_1.default.Range(position, position));
-                    // Attach the command to the completion item so we can detect when its been accepted
-                    completionItem.command = {
-                        command: constants_1.INLINE_COMPLETION_ACCEPTED_COMMAND,
-                        title: 'Inline Completion Accepted'
-                    };
-                    completionItems.push(completionItem);
-                    return completionItems;
-                }
-                // Nothing to complete
+            }
+            if (token.isCancellationRequested) {
+                console.log(`Canceled after AI completion.`);
                 return;
-            });
+            }
+            // Return result
+            if (res && res.trim() !== '') {
+                console.log(`setting res at position: ${JSON.stringify(position, undefined, 2)}`);
+                const completionItems = [];
+                const completionItem = new vscode_1.default.InlineCompletionItem(res, new vscode_1.default.Range(position, position));
+                // Attach the command to the completion item so we can detect when its been accepted
+                completionItem.command = {
+                    command: constants_1.INLINE_COMPLETION_ACCEPTED_COMMAND,
+                    title: 'Inline Completion Accepted'
+                };
+                completionItems.push(completionItem);
+                return completionItems;
+            }
+            // Nothing to complete
+            return;
+            //});
         }
         catch (e) {
             console.log('Error during inference:', e);
             vscode_1.default.window.showErrorMessage(e.message);
+        }
+        finally {
+            this._processing_request = false;
         }
     }
     async completionAccepted(sidebarProvider, cost) {
