@@ -89,7 +89,7 @@ export class PromptProvider implements vscode.InlineCompletionItemProvider {
     }
 
     async provideInlineCompletionItems(document: vscode.TextDocument, position: vscode.Position, context: vscode.InlineCompletionContext, token: vscode.CancellationToken): Promise<vscode.InlineCompletionItem[] | vscode.InlineCompletionList | undefined | null> {
-        if (!await this.delayCompletion(config.inference.delay, token) || this._solution_accepted || this._processing_request) {
+        if (!await this.delayCompletion(config.inference.delay, token) || this._solution_accepted ) { // || this._processing_request) {
             if (this._solution_accepted) { console.log(`xxxxxxx do not query AI as solution was accepted`); }
             // Do not do another AI request when a solution is accepted
             this._solution_accepted = false;
@@ -130,7 +130,7 @@ export class PromptProvider implements vscode.InlineCompletionItemProvider {
             this._processing_request = true;
 
             // Execute in lock
-            //return await this.lock.inLock(async () => {
+            return await this.lock.inLock(async () => {
                 console.log('In lock');
 
                 if (this._solution_accepted) { return; }
@@ -271,7 +271,7 @@ export class PromptProvider implements vscode.InlineCompletionItemProvider {
 
                 // Nothing to complete
                 return;
-            //});
+            });
         } catch (e) {
             console.log('Error during inference:', e);
             vscode.window.showErrorMessage((e as Error).message);
