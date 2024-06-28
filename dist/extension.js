@@ -1250,7 +1250,7 @@ async function dappforgeAutocomplete(args) {
     return code;
 }
 exports.dappforgeAutocomplete = dappforgeAutocomplete;
-function prepareAIPrompt(input, limit = 1000) {
+function prepareAIPrompt(input, limit = 300) {
     // Step 1: Trim the input to the last `limit` characters
     const trimmedInput = input.slice(-limit);
     // Step 2: Adjust start to ensure it begins with a complete word
