@@ -183,7 +183,7 @@ export async function dappforgeAutocomplete(args: {
     return code;
 }
 
-function prepareAIPrompt(input: string, limit: number = 300): string {
+function prepareAIPrompt(input: string, limit: number = 250): string {
     // Step 1: Trim the input to the last `limit` characters
     const trimmedInput = input.slice(-limit);
   
