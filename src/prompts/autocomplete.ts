@@ -139,7 +139,8 @@ export async function dappforgeAutocomplete(args: {
             "Accept": "application/json",
             'access-token': accessToken,
             'refresh-token': refreshToken
-        }
+        },
+        signal: AbortSignal.timeout(120000)
     });
     if (!res.ok || !res.body) {
         if (res.body) {
@@ -174,7 +175,8 @@ export async function dappforgeAutocomplete(args: {
     let code: string = '';
     if (data.hasOwnProperty('generated_code')) {
         code = data.generated_code;
-        code = code.replace(/\\n/g, '\n');
+        code = unescapeControlCharacters(code)
+        //code = code.replace(/\\n/g, '\n');
         // Trim ends of all lines since sometimes the AI completion will add extra spaces
         code = code.split('\n').map((v) => v.trimEnd()).join('\n');
         console.log(`completed_code: ${code}`);
@@ -198,4 +200,26 @@ function prepareAIPrompt(input: string, limit: number = 250): string {
   
     // Return the adjusted input
     return adjustedInput.trim();
+}
+
+function unescapeControlCharacters(str: string): string {
+    // Define a mapping of escaped characters to their actual characters
+    const controlCharacterMap: { [key: string]: string } = {
+        '\\n': '\n',
+        '\\t': '\t',
+        '\\r': '\r',
+        '\\b': '\b',
+        '\\f': '\f',
+        '\\v': '\v',
+        '\\0': '\0',
+        '\\\\': '\\', // To handle escaped backslash
+        '\\"': '"',  // To handle escaped double quote
+        "\\'": "'",  // To handle escaped single quote
+    };
+
+    // Create a regular expression to match all escaped control characters
+    const controlCharacterRegex = /\\[ntrbfv0\\'"]/g;
+
+    // Replace the escaped sequences with their corresponding control characters
+    return str.replace(controlCharacterRegex, (match) => controlCharacterMap[match] || match);
 }
