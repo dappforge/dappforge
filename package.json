@@ -2,7 +2,7 @@
   "name": "dappforge",
   "displayName": "dAppForge",
   "description": "AI tool tailored for blockchain developers to build better dApps faster, reducing development time.",
-  "version": "0.0.12",
+  "version": "0.0.13",
   "icon:": "media/dAppforge-mark.png",
   "publisher": "dappforge",
   "repository": {
