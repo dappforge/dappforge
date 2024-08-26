@@ -15,6 +15,7 @@ dAppForge is an AI-powered plug-in for Polkadot developers that reduces developm
 
 - AWS API Gateway, Websockets, Lambda, and DynamoDb for the API.
 - Typescript and Svelte for the VS Code plugin.
+- AI LLM hosted on AWS.
 
 ## Schedule
 
