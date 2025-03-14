@@ -113,6 +113,7 @@ export const Message: React.FC<MessageProps> = React.memo(
               role={message?.role}
               language={message?.language}
               theme={theme}
+              index={index}
               {...children.props}
             />
           )

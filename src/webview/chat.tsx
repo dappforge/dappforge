@@ -25,6 +25,7 @@ import useAutosizeTextArea, {
   useWorkSpaceContext
 } from './hooks'
 import { useConfigurationSetting } from './hooks'
+import { useSubscriptions } from './hooks'
 import {
   DisabledAutoScrollIcon,
   EnabledAutoScrollIcon,
@@ -81,6 +82,7 @@ export const Chat = () => {
   const [completion, setCompletion] = useState<MessageType | null>()
   const markdownRef = useRef<HTMLDivElement>(null)
   const { configurationSetting } = useConfigurationSetting('enabled')
+  const { validSubscription, checkForValidSubscription } = useSubscriptions();
 
   const { context: autoScrollContext, setContext: setAutoScrollContext } =
     useWorkSpaceContext<boolean>(WORKSPACE_STORAGE_KEY.autoScroll)
@@ -273,6 +275,7 @@ export const Chat = () => {
   const handleSubmitForm = () => {
     const input = editor?.getText()
     if (input) {
+      checkForValidSubscription()
       setIsLoading(true)
       generatingRef.current = true
       clearEditor()
@@ -336,7 +339,7 @@ export const Chat = () => {
   }, [conversation?.id, autoScrollContext, showProvidersContext])
 
   const editor = useEditor({
-    editable: !(isLoading || generatingRef.current), //typeof configurationSetting === 'boolean' ? configurationSetting : true,
+    editable: !(isLoading || generatingRef.current || !validSubscription), //typeof configurationSetting === 'boolean' ? configurationSetting : true,
     extensions: [
       StarterKit,
       Placeholder.configure({

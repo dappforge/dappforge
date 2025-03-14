@@ -27,17 +27,19 @@ import {
   ServerMessage,
   TemplateData,
   Message,
-  StreamRequestOptions
+  StreamRequestOptions,
+  RequestOptionsDappForge,
+  dAppForgeRequestTypes
 } from '../common/types'
 import {
   getChatDataFromProvider,
   getLanguage,
+  resetSatusBar,
   updateLoadingMessage
 } from './utils'
-import { updateStatusBar } from './auth-utils'
 import { CodeLanguageDetails } from '../common/languages'
 import { TemplateProvider } from './template-provider'
-import { streamResponse, completionAccepted } from './stream'
+import { streamResponse, completionAccepted, sendAiApiRequest } from './stream'
 import { createStreamRequestBody } from './provider-options'
 import { kebabToSentence } from '../webview/utils'
 import { DappforgeProvider } from './provider-manager'
@@ -208,7 +210,7 @@ export class ChatService {
       }
     } as ServerMessage)
     if (!this._streamError) this.completionAccepted()
-    updateStatusBar(this._statusBar)
+    resetSatusBar(this._statusBar)
   }
 
   public completionAccepted() {
@@ -219,8 +221,19 @@ export class ChatService {
     }    
   }
 
+  public sendChatFeedback(apiRequest: string) {
+    const request = this.buildStreamRequest();
+    //console.log(`sendChatFeedback request: ${JSON.stringify(request, undefined, 2)}`)
+    if (request) {
+      const requestBody = request.requestBody as RequestOptionsDappForge
+      requestBody.request.query = apiRequest
+      //console.log(`sendChatFeedback requestBody: ${JSON.stringify(requestBody, undefined, 2)}`)
+      sendAiApiRequest(requestBody, dAppForgeRequestTypes.feedback)
+    }
+  }
+
   private onStreamError = (error: Error) => {
-    updateStatusBar(this._statusBar)
+    resetSatusBar(this._statusBar)
     window.showErrorMessage(error.message)
     this._view?.webview.postMessage({
       type: EVENT_NAME.dappforgeOnEnd,
@@ -249,7 +262,7 @@ export class ChatService {
 
   public destroyStream = () => {
     this._controller?.abort()
-    //updateStatusBar(this._statusBar)
+    //resetSatusBar(this._statusBar)
     commands.executeCommand(
       'setContext',
       EXTENSION_CONTEXT_NAME.dappforgeGeneratingText,

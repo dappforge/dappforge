@@ -1,6 +1,7 @@
 import { InlineCompletionItem, InlineCompletionList } from 'vscode'
 import { CodeLanguageDetails } from './languages'
 import { ALL_BRACKETS } from './constants'
+import { Bool } from '@lancedb/lancedb/dist/arrow'
 
 export interface RequestBodyBase {
   stream: boolean
@@ -19,13 +20,17 @@ export interface RequestOptionsOllama extends RequestBodyBase {
 export const dAppForgeRequestTypes = {
   autocompletion: 'ai-autocomplete',
   chat: 'ai-chat',
-  reduceCount: 'ai-reducecount'
+  reduceCount: 'ai-reducecount',
+  feedback: 'ai-feedback',
+  stripe: 'stripe',
+  stripeWebhook: 'stripe-webhook',
+  updateConnection: 'update-connection',
 } as const
 
 export interface RequestOptionsDappForge extends RequestBodyBase {
   accessToken: string
   authorization: string
-  githubId: string
+  userId: string
   request: { prefix_code?: string, kg_name: string, query?: string, session_id?: string }
   requestType: (typeof dAppForgeRequestTypes)[keyof typeof dAppForgeRequestTypes]
 }
@@ -112,6 +117,33 @@ export interface User {
   email?: string;
   avatarUrl?: string;
   tokenCount?: number;
+  authType?: string;
+  subscriptionId?: string;
+  subscriptionCurrentPeriodEnd?: string;
+  subscriptionTokens?: number;
+  subscriptionUsedFree?: boolean;
+  subscriptionName?: string;
+  subscriptionInterval?: string;
+  subscriptionPriceId?: string;
+  subscriptionItemId?: string;
+}
+
+export interface StripeProduct {
+  id: string;
+  price: string;
+  interval: string;
+  currency: string;
+  features: JSON;
+  name: string;
+  active: Bool;
+  tokens: string;
+  description: string;
+  priceId: string;
+  pk: string;
+  sk: string;
+  createdAt: string;
+  updatedAt: string;
+  timestamp: string;  
 }
 
 export const Theme = {

@@ -9,7 +9,8 @@ import {
   TextDocument,
   WebviewView,
   window,
-  workspace
+  workspace,
+  StatusBarItem
 } from 'vscode'
 
 import {
@@ -21,7 +22,8 @@ import {
   Bracket,
   Message,
   ChunkOptions,
-  ServerMessage
+  ServerMessage,
+  User
 } from '../common/types'
 import { supportedLanguages } from '../common/languages'
 import {
@@ -35,13 +37,22 @@ import {
   OPENING_BRACKETS,
   QUOTES,
   SKIP_DECLARATION_SYMBOLS,
-  DAPPFORGE
+  DAPPFORGE,
+  ACTIVE_CONVERSATION_ID_STORAGE_KEY,
+  STATUSBAR_ICON
 } from '../common/constants'
 import { Logger } from '../common/logger'
 import { SyntaxNode } from 'web-tree-sitter'
 import { getParser } from './parser-utils'
+import { getBasicAuthToken, getStoredUser } from './auth-utils'
 
 const logger = new Logger()
+
+
+export function resetSatusBar(statusBar: StatusBarItem) {
+    statusBar.text = STATUSBAR_ICON;
+    statusBar.tooltip = ''
+}
 
 export const delayExecution = <T extends () => void>(
   fn: T,
@@ -151,13 +162,11 @@ export const getShouldSkipCompletion = (
   // Avoid autocomplete on empty lines
   const line = document.lineAt(cursorPosition.line).text.trim();
   if (line.trim() === '') {
-    logger.log('xxx blank line, skip')
     return true;
   }
 
   // Avoid autocomplete when system menu is shown (ghost text is hidden anyway)
   if (context.selectedCompletionInfo) {
-    logger.log('xxx system menu shown, skip')
     return true;
   }  
   
@@ -395,9 +404,9 @@ function processDappForgeChatResponse(data: StreamResponse): string {
     chatReply = unescapeControlCharacters(responseJson.reply);
 
     // Trim ends of all lines
-    chatReply = chatReply.split('\n').map((v) => v.trimEnd()).join('\n');
+    //chatReply = chatReply.split('\n').map((v) => v.trimEnd()).join('\n');
     
-    logger.log(`<~~~~~ chatReply: ${chatReply}`);
+    //logger.log(`<~~~~~ chatReply: ${chatReply}`);
   }
   return chatReply;  
 }
@@ -428,9 +437,9 @@ function processDappForgeResponse(data: StreamResponse): string {
       code = unescapeControlCharacters(code);
 
       // Trim ends of all lines
-      code = code.split('\n').map((v) => v.trimEnd()).join('\n');
+      //code = code.split('\n').map((v) => v.trimEnd()).join('\n');
       
-      logger.log(`<~~~~~ completion code received: ${code}`);
+      //logger.log(`<~~~~~ completion code received: ${code}`);
     }
     return code;  
 }
@@ -731,3 +740,58 @@ export function generateConversationTitle(): string {
   return `${formattedDate} at ${formattedTime}`;
 }
 
+// Check github token is still active, retrieve user details as the same time
+export const sendFeedback = (
+  feedbackType: string, 
+  vote: string,
+  feedbackText: string,
+  code: string,
+  context: ExtensionContext
+) => {
+  const config = workspace.getConfiguration('dappforge');
+  const apiBaseUrl = config.get('apiUri')
+  //logger.log(`~~~~~> sendFeedback feedbackUri: ${apiBaseUrl} feedbackType: ${feedbackType} vote: ${vote} feedbackText: ${feedbackText} code: ${code}`)
+  const user: User | null | undefined = getStoredUser()
+  const conversationId: string | undefined = context?.globalState.get(ACTIVE_CONVERSATION_ID_STORAGE_KEY)
+  
+  if (user) {
+    try {
+      const fetchOptions = {
+        method: 'POST',
+        headers: {
+          authorization: `Basic ${getBasicAuthToken(user)}`,
+          'access-token': user.accessToken,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          sessionId: conversationId,
+          feedbackType: feedbackType,
+          vote: vote,
+          feedbackText: feedbackText,
+          code: code  
+        }),
+      }      
+      const uri = `${apiBaseUrl}/ai/feedback/${user.id}`
+      fetch(uri, fetchOptions)
+        .then(response => {
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`)
+          }
+          //logger.log(`Feedback sent successfully: ${response.status}`)
+        })
+        .catch(e => {
+          if (e instanceof Error) {
+            logger.error(e)
+          } else {
+            //(`-----> sendFeedback: error: ${e}`)
+          }
+        })
+    } catch (e: unknown) {
+      if (e instanceof Error) {
+        logger.error(e);
+      } else {
+        //logger.log(`-----> sendFeedback: error: ${e}`);
+      }
+    }
+  }
+}

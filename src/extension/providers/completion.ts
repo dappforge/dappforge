@@ -22,7 +22,8 @@ import {
   getShouldSkipCompletion,
   getIsMiddleOfString,
   getIsMultilineCompletion,
-  getCurrentLineText
+  getCurrentLineText,
+  resetSatusBar
 } from '../utils'
 import { cache } from '../cache'
 import { supportedLanguages } from '../../common/languages'
@@ -57,7 +58,7 @@ import { getLineBreakCount } from '../../webview/utils'
 import { TemplateProvider } from '../template-provider'
 import { DappforgeProvider } from '../provider-manager'
 import { getNodeAtPosition, getParser } from '../parser-utils'
-import { isAuthenticated, hasTokensLeft, updateStatusBar } from '../auth-utils'
+import { updateStatusBar, userHasValidSubscription } from '../auth-utils'
 
 export class CompletionProvider implements InlineCompletionItemProvider {
   private _config = workspace.getConfiguration('dappforge')
@@ -151,8 +152,7 @@ export class CompletionProvider implements InlineCompletionItemProvider {
     }
 
     if (
-      !isAuthenticated() ||
-      !hasTokensLeft() ||
+      userHasValidSubscription().length > 0 ||
       !this._enabled ||
       !editor ||
       isLastCompletionAccepted ||
@@ -182,7 +182,7 @@ export class CompletionProvider implements InlineCompletionItemProvider {
     if (this._debouncer) {
       clearTimeout(this._debouncer) // Clear any ongoing debounce timeout
       this.deleteItemFromQueue(this._debouncer)
-      this._logger.log(`<><>provideInlineCompletionItems user input received remove debouncer: ${this._debouncer}`)
+      //this._logger.log(`<><>provideInlineCompletionItems user input received remove debouncer: ${this._debouncer}`)
     }
 
     const prompt = await this.getPrompt(this._prefixSuffix)
@@ -192,19 +192,19 @@ export class CompletionProvider implements InlineCompletionItemProvider {
     return new Promise<ResolvedInlineCompletion>((resolve, reject) => {
       // Create a new debounce timeout
       const newDebouncer = setTimeout(() => {
-        this._logger.log(`<><>provideInlineCompletionItems in timeout waiting for lock newDebouncer: ${newDebouncer} this._debouncer: ${this._debouncer} prompt: ${prompt}`)
+        //this._logger.log(`<><>provideInlineCompletionItems in timeout waiting for lock newDebouncer: ${newDebouncer} this._debouncer: ${this._debouncer} prompt: ${prompt}`)
         this._lock.acquire('dappforge.completion', async () => {
           // After getting the lock once all other requests have completed executing, 
           // check if there is another request in the queue that takes precedence, i.e.
           // last item in the queue is not this one
-          this._logger.log(`<><>provideInlineCompletionItems lock aquired this._queue.length: ${this._queue.length} prompt: ${prompt}`)
-          this._logger.log(`<><>provideInlineCompletionItems lock aquired newDebouncer: ${newDebouncer} this._debouncer: ${this._debouncer} this._queue[this._queue.length - 1]: ${this._queue[this._queue.length - 1]}`)
+          //this._logger.log(`<><>provideInlineCompletionItems lock aquired this._queue.length: ${this._queue.length} prompt: ${prompt}`)
+          //this._logger.log(`<><>provideInlineCompletionItems lock aquired newDebouncer: ${newDebouncer} this._debouncer: ${this._debouncer} this._queue[this._queue.length - 1]: ${this._queue[this._queue.length - 1]}`)
           if (this._queue[this._queue.length - 1] !== newDebouncer) {
             this.deleteItemFromQueue(newDebouncer)
-            this._logger.log(`<><>provideInlineCompletionItems lock aquired STALE request, not executing newDebouncer: ${newDebouncer}`)
+            //this._logger.log(`<><>provideInlineCompletionItems lock aquired STALE request, not executing newDebouncer: ${newDebouncer}`)
             return
           }
-          this._logger.log(`<><>provideInlineCompletionItems lock aquired VALID request, executing newDebouncer: ${newDebouncer}`)
+          //this._logger.log(`<><>provideInlineCompletionItems lock aquired VALID request, executing newDebouncer: ${newDebouncer}`)
           const provider = this.getProvider()
           if (!provider) return
           const request = this.buildStreamRequest(prompt, provider)
@@ -242,7 +242,7 @@ export class CompletionProvider implements InlineCompletionItemProvider {
 
       // Place new debouncer in the queue
       this._debouncer = newDebouncer
-      this._logger.log(`<><>provideInlineCompletionItems new debouncer added to queue ID: ${this._debouncer}`)  
+      //this._logger.log(`<><>provideInlineCompletionItems new debouncer added to queue ID: ${this._debouncer}`)  
       this._queue.push(this._debouncer) 
     })
   }
@@ -511,14 +511,14 @@ export class CompletionProvider implements InlineCompletionItemProvider {
   }
 
   private async getPrompt(prefixSuffix: PrefixSuffix) {
-    this._logger.log(`getPrompt: prefixSuffix: ${JSON.stringify(prefixSuffix, undefined, 2)}`)
+    //this._logger.log(`getPrompt: prefixSuffix: ${JSON.stringify(prefixSuffix, undefined, 2)}`)
 
     const provider = this.getProvider()
     if (!provider) return ''
     if (!this._document || !this._position || !provider) return ''
 
     const documentLanguage = this._document.languageId
-    this._logger.log(`getPrompt documentLanguage: ${documentLanguage}`)
+    //this._logger.log(`getPrompt documentLanguage: ${documentLanguage}`)
     if (provider.provider == apiProviders.dAppForge && documentLanguage != 'rust') return ''
 
     const fileInteractionContext = await this.getFileInteractionContext()
@@ -574,7 +574,7 @@ export class CompletionProvider implements InlineCompletionItemProvider {
 
   public abortCompletion() {
     this._abortController?.abort()
-    updateStatusBar(this._statusBar)
+    resetSatusBar(this._statusBar)
   }
 
   private logCompletion(formattedCompletion: string) {
@@ -612,7 +612,7 @@ export class CompletionProvider implements InlineCompletionItemProvider {
       cache.setCache(this._prefixSuffix, formattedCompletion)
 
     this._completion = ''
-    updateStatusBar(this._statusBar)
+    resetSatusBar(this._statusBar)
     this.lastCompletionText = formattedCompletion
     this._lastCompletionMultiline = getLineBreakCount(this._completion) > 1
 

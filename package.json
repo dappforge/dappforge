@@ -2,7 +2,7 @@
   "name": "dappforge",
   "displayName": "dAppForge",
   "description": "AI tool tailored for blockchain developers to build better dApps faster, reducing development time.",
-  "version": "0.1.14",
+  "version": "0.2.24",
   "icon": "assets/icon.png",
   "publisher": "dappforge",
   "repository": {
@@ -175,7 +175,7 @@
       {
         "command": "dappforge.authenticate",
         "shortTitle": "dappforge authenticate",
-        "title": "Authenticate",
+        "title": "Account",
         "icon": "$(account)"
       }
     ],
@@ -236,7 +236,9 @@
           "default": "substrate",
           "enum": [
             "substrate",
-            "ink"
+            "ink",
+            "solidity",
+            "rust"
           ],
           "description": "dAppForge Language"
         },

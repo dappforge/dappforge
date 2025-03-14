@@ -293,6 +293,20 @@ export async function activate(context: ExtensionContext) {
   if (config.get('enabled')) statusBar.show() 
 
   // Update statusbar depeding on auth state
-  checkAuthenticationStatus()
-  sidebarProvider.userUpdated()
+  //checkAuthenticationStatus()
+  //sidebarProvider.userUpdated()
+
+  //vscode.workspace.onDidChangeConfiguration((event) => {
+    //if (event.affectsConfiguration('dappforge.email')) {
+    //  sidebarProvider.view?.webview.postMessage({
+    //    type: EVENT_NAME.dappforgeSetTab,
+    //    value: {
+    //      data: WEBUI_TABS.settings
+    //    }
+    //  } as ServerMessage<string>)
+    //  commands.executeCommand(DAPPFORGE_COMMAND_NAME.authenticate)
+    //  const newEmail = vscode.workspace.getConfiguration().get('dappforge.email');      
+    //  console.log('yyyyy onDidChangeConfiguration:', newEmail);
+    //}
+  //});  
 }

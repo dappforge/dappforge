@@ -10,9 +10,12 @@ export class WebSocketHandler {
   private reconnectInterval = 5000 // 5 seconds
   private url: string
   private requestTimeout = 180000 // 3 minutes in milliseconds
+  private onMessage: ((message: unknown) => void) | null = null
+  private handleMessage: ((event: WebSocket.MessageEvent) => void) | null = null
 
-  constructor(url: string) {
+  constructor(url: string, onMessage?: (message: unknown) => void) {
     this.url = url
+    this.onMessage = onMessage || null
   }
 
   public setNewUrl(url: string) {
@@ -29,8 +32,23 @@ export class WebSocketHandler {
     }
   }
 
+  public isSocketOpen() {
+    return (this.socket && this.socket.readyState === WebSocket.OPEN)  
+  }
+
   public getNewUrl(): string {
     return this.url
+  }
+
+  public async sendMessage(message: unknown) {
+    if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
+      await this.openConnection()
+    }
+    if (this.socket && this.socket.readyState === WebSocket.OPEN) {
+      this.socket.send(JSON.stringify(message))
+    } else {
+      console.error('WebSocket is not connected.')
+    }
   }
 
   // Function to send a request and handle both streaming and non-streaming responses
@@ -57,12 +75,17 @@ export class WebSocketHandler {
         reject(new Error('Did not receive a response from the AI API in a timely manner.'))
       }, this.requestTimeout)
 
+      // Remove old listener if exists, then re-add
+      if (this.handleMessage) {
+        this.socket.removeEventListener('message', this.handleMessage)
+      }
+
       // Set up event listener for incoming messages
-      this.socket.onmessage = (event) => {
+      this.handleMessage = (event: WebSocket.MessageEvent) => {
         try {
           const data = event.data
-          const dataStr = typeof data === 'string' ? data : data.toString();
-          logger.log(`<~~~~~ received data: ${dataStr}`)
+          const dataStr = typeof data === 'string' ? data : data.toString()
+          //logger.log(`<~~~~~ received data: ${dataStr}`)
           const parsedData = JSON.parse(dataStr)
 
           // Reset the timeout when data is received
@@ -99,13 +122,16 @@ export class WebSocketHandler {
         }
       }
 
+      this.socket.addEventListener('message', this.handleMessage)
+
+
       this.socket.onerror = () => {
         clearTimeout(timeoutHandle)
         reject(new Error('WebSocket encountered an error.'))
       }
 
       this.socket.onclose = () => {
-        logger.log('WebSocket connection was closed.')
+        //logger.log('WebSocket connection was closed.')
         if (isStreaming && onComplete) {
           onComplete() // Signal the end of the stream
         }
@@ -113,30 +139,45 @@ export class WebSocketHandler {
       }
 
       // Send the request
+      //console.log(`>>>>> sendRequest request: ${JSON.stringify(request)}`)
       this.socket.send(JSON.stringify(request))
     })
   }
 
-  // Function to open WebSocket connection
   private openConnection(): Promise<void> {
     return new Promise((resolve, reject) => {
       this.socket = new WebSocket(this.url)
       this.socket.binaryType = 'arraybuffer'
-
+  
       this.socket.onopen = () => {
-        logger.log('WebSocket connection established')
+        //logger.log('WebSocket connection established')
         resolve()
       }
-
+  
       this.socket.onerror = (error) => {
         console.error('WebSocket error:', error)
         reject(new Error('Failed to open WebSocket connection.'))
       }
-
+  
       this.socket.onclose = () => {
-        logger.log('WebSocket connection closed')
+        //logger.log('WebSocket connection closed')
+      }
+
+      // Instead of assigning this.socket.onmessage, use addEventListener
+      if (this.onMessage) {
+        this.socket.addEventListener('message', (event) => {
+          try {
+            //console.log(`this.socket.onmessage data: ${event}`)
+            const data = JSON.parse(event.data.toString())
+            if (this.onMessage) {
+              this.onMessage(data) // Handle general messages
+            }
+          } catch (error) {
+            console.error('Error processing message:', error)
+          }
+        })
       }
     })
   }
-
+  
 }

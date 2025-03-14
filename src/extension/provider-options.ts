@@ -43,7 +43,7 @@ export function createStreamRequestBody(
       const config = workspace.getConfiguration('dappforge')
       const language: string = config.get('language') || ''
       let message: string | undefined = ''
-      console.dir(options.messages)
+      //console.dir(options.messages)
       message = options.messages?.reverse().find(message => message.role === USER)?.content;
       if (user) {
         return {
@@ -51,7 +51,7 @@ export function createStreamRequestBody(
           stream: true,
           accessToken: user.accessToken,
           authorization: `${getBasicAuthToken(user)}`,
-          githubId: user.id,
+          userId: user.id,
           request: { query: prepareAIPrompt(message || '', 2000), kg_name: language, session_id: options.conversationId },
           requestType: dAppForgeRequestTypes.chat
         }
@@ -134,7 +134,7 @@ export function createStreamRequestBodyFim(
           stream: true,
           accessToken: user.accessToken,
           authorization: `${getBasicAuthToken(user)}`,
-          githubId: user.id,
+          userId: user.id,
           request: { prefix_code: prepareAIPrompt(prompt), kg_name: language },
           requestType: dAppForgeRequestTypes.autocompletion
         }

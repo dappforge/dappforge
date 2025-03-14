@@ -374,3 +374,244 @@ pre code {
   background-color: var(--vscode-button-background);
   color: var(--vscode-inputValidation-infoForeground);
 }
+
+.feedbackForm {
+  padding: 8px;
+  border: 1px solid var(--vscode-editorWidget-border);
+  border-radius: 8px;
+  background-color: var(--vscode-editorWidget-background);
+  color: var(--vscode-editorWidget-foreground);
+}
+
+.feedbackHeading {
+  font-size: 1.5em;
+  font-weight: bold;
+  margin: 0 0 5px 0;
+  color: var(--vscode-editorWidget-foreground);
+}
+
+.feedbackTextarea {
+  width: 90%; /* Make textarea stretch the width of the form */
+  height: 50px; /* Make textarea taller */
+  padding: 8px;
+  margin-bottom: 12px;
+  border: 1px solid var(--vscode-editorWidget-border);
+  border-radius: 4px;
+  background-color: var(--vscode-input-background);
+  color: var(--vscode-input-foreground);
+  resize: vertical; /* Allow vertical resizing */
+}
+
+.feedbackButtons {
+  display: flex;
+  gap: 10px; /* Add space between buttons */
+  margin-top: 5px;
+}
+
+.feedbackButton {
+  flex: 1; /* Make buttons take equal space */
+  background-color: var(--vscode-button-background);
+  color: var(--vscode-button-foreground);
+  border: none;
+  padding: 8px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.feedbackButton:hover {
+  background-color: var(--vscode-button-hoverBackground);
+}
+
+.codeOptionsContainer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 12px;
+}
+
+.staticMessage {
+  margin-right: 10px;
+  padding: 8px;
+  border: 2px solid var(--vscode-editorWidget-border); /* Use VS Code border color */
+  color: var(--vscode-editorWidget-foreground); /* Use VS Code text color */
+  flex-grow: 1; /* Stretch the static message to fill the available space */
+  font-size: smaller;
+}
+
+.codeOptions {
+  display: flex;
+  gap: 10px; /* Add space between buttons */
+}
+
+.userContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  padding: 10px;
+}
+
+.userBox, .subscriptionBox {
+  width: 100%;
+  max-width: 400px;
+  padding: 15px;
+  border-radius: 5px;
+  background-color: var(--vscode-editor-background);
+  color: var(--vscode-editor-foreground);
+  border: 1px solid var(--vscode-editorWidget-border);
+  box-shadow: 0px 2px 5px var(--vscode-widget-shadow);
+  text-align: center;
+}
+
+.avatar {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+}
+
+.subscriptionBox h3 {
+  margin-bottom: 10px;
+  color: var(--vscode-textPreformat-foreground);
+}
+
+.subscriptionOptions {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.subscriptionCard {
+  border: 1px solid var(--vscode-editorHoverWidget-border);
+  padding: 10px;
+  border-radius: 5px;
+  background-color: var(--vscode-editor-background);
+  text-align: center;
+}
+
+.subscriptionCard h4 {
+  margin: 0;
+  padding-bottom: 5px;
+  border-bottom: 1px solid var(--vscode-editorWidget-border);
+}
+
+.subscriptionCard ul {
+  list-style-type: none;
+  padding: 0;
+}
+
+.subscriptionCard li {
+  margin-bottom: 5px;
+}
+
+.subscriptionButton {
+  width: 95%;
+  background-color: var(--vscode-button-background);
+  color: var(--vscode-button-foreground);
+  border: 1px solid var(--vscode-button-border);
+  padding: 8px;
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.subscriptionButton:hover {
+  background-color: var(--vscode-button-hoverBackground);
+}
+.cancelSubscriptionButton {
+  background: var(--vscode-errorForeground);
+  color: var(--vscode-editor-background);
+  border: 1px solid var(--vscode-editorError-foreground);
+}
+
+.cancelSubscriptionButton:hover {
+  background: var(--vscode-editorError-foreground);
+  color: var(--vscode-editor-background);
+}
+
+.emailFormContainer {
+  margin-top: 1rem;
+  padding: 1rem;
+  background-color: var(--vscode-editor-background);
+  border: 1px solid var(--vscode-editorWidget-border);
+  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.emailFormContainer label {
+  font-size: var(--vscode-font-size);
+  color: var(--vscode-foreground);
+}
+
+.emailInput {
+  width: 90%;
+  padding: 8px 12px;
+  border: 1px solid var(--vscode-input-border);
+  border-radius: 4px;
+  background-color: var(--vscode-input-background);
+  color: var(--vscode-input-foreground);
+  font-size: var(--vscode-font-size);
+}
+
+.emailSubmitButton {
+  background-color: var(--vscode-button-background);
+  color: var(--vscode-button-foreground);
+  padding: 8px 12px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  width: 90%;
+}
+
+.emailSubmitButton:hover {
+  background-color: var(--vscode-button-hoverBackground);
+}
+
+.emailSubmitButton:disabled {
+  background-color: var(--vscode-disabledForeground);
+  cursor: not-allowed;
+}
+
+.tokenCountGreen {
+  color: green;
+  font-weight: bold;
+}
+
+.tokenCountOrange {
+  color: orange;
+  font-weight: bold;
+}
+
+.tokenCountRed {
+  color: red;
+  font-weight: bold;
+}
+
+.monthlyHeading {
+  background-color: var(--vscode-dropdown-background);
+  padding: 8px;
+  border-radius: 4px;
+  color: var(--vscode-editor-foreground);
+  font-weight: bold;
+}
+
+.yearlyHeading {
+  background-color: var(--vscode-editorHoverWidget-border);
+  padding: 8px;
+  border-radius: 4px;
+  color: var(--vscode-editor-foreground);
+  font-weight: bold;
+}
+
+.freeHeading {
+  background-color: var(--vscode-inputOption-activeBackground);
+  padding: 8px;
+  border-radius: 4px;
+  color: var(--vscode-editor-foreground);
+  font-weight: bold;
+}
+
+.errorText {
+  color: red;
+  font-weight: bold;
+}

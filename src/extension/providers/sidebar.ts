@@ -5,7 +5,7 @@ import {
   getTextSelection,
   getTheme
 } from '../utils'
-import { getStoredUser, updateStatusBar } from '../auth-utils'
+import { getStoredUser, updateStatusBar, userHasValidSubscription } from '../auth-utils'
 import {
   WORKSPACE_STORAGE_KEY,
   EVENT_NAME,
@@ -17,7 +17,7 @@ import {
   ClientMessage,
   Message,
   ApiModel,
-  ServerMessage
+  ServerMessage  
 } from '../../common/types'
 import { TemplateProvider } from '../template-provider'
 import { OllamaService } from '../ollama-service'
@@ -26,6 +26,7 @@ import { AuthenticationManager } from '../authentication-manager'
 import { ConversationHistory } from '../conversation-history'
 import { SessionManager } from '../session-manager'
 import { DiffManager } from '../diff'
+import { Stripe } from '../stripe'
 
 export class SidebarProvider implements vscode.WebviewViewProvider {
   private _config = vscode.workspace.getConfiguration('dappforge')
@@ -75,6 +76,8 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
     new ProviderManager(this._context, this.view)
 
     new AuthenticationManager(this._context, this.view)
+
+    new Stripe(this._context, this.view)
 
     webviewView.webview.options = {
       enableScripts: true,
@@ -128,7 +131,8 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
         [EVENT_NAME.dappforgeSetConfigValue]: this.setConfigurationValue,
         [EVENT_NAME.dappforgeGetConfigValue]: this.getConfigurationValue,
         [EVENT_NAME.dappforgeHideBackButton]: this.dappforgeHideBackButton,
-        [EVENT_NAME.dappforgeSessionContext]: this.getSessionContext
+        [EVENT_NAME.dappforgeSessionContext]: this.getSessionContext,
+        [EVENT_NAME.dappforgeChatFeedback]: this.sendChatFeedback
       }
       eventHandlers[message.type as string]?.(message)
     })
@@ -208,11 +212,42 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
   }
 
   public streamChatCompletion = async (data: ClientMessage<Message[]>) => {
-    this.chatService?.streamChatCompletion(data.data || [])
+    if (this._checkForValidSubscription()) {
+      this.chatService?.streamChatCompletion(data.data || [])
+    }
+  }
+
+  private _checkForValidSubscription = () =>  {
+    const subscriptionError = userHasValidSubscription()
+    const isValid = !(subscriptionError && subscriptionError.length > 0)
+    if (subscriptionError.length > 0) {
+      this.view?.webview.postMessage({
+        type: AUTHENTICATION_EVENT_NAME.checkForValidSubscription,
+        value: {
+          data: isValid
+        }
+      })
+    }
+    return isValid
   }
 
   public async streamTemplateCompletion(template: string) {
-    this.chatService?.streamTemplateCompletion(template)
+    if (this._checkForValidSubscription()) {
+      this.chatService?.streamTemplateCompletion(template)
+    }
+  }
+
+  public sendChatFeedback = async (message: ClientMessage<{ type: string; content: string }>) => {
+    const { type, content } = message.data || { type: '', content: '' };
+    const { comment, code } = JSON.parse(content);
+    if (code) {
+      this.chatService?.sendChatFeedback(JSON.stringify({
+        source: 'chat',
+        vote: type,
+        comment: comment,
+        code: code
+      }))
+    }
   }
 
   public getSelectedText = () => {

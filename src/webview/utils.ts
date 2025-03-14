@@ -61,3 +61,7 @@ export const getModelShortName = (name: string) => {
   }
   return name
 }
+
+export const getDateFromUnixTimestamp = (unixDate: string): Date => {
+  return new Date(Number(unixDate) * 1000)
+}

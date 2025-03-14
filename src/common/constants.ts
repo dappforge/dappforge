@@ -30,6 +30,7 @@ export const STATUSBAR_BUSY = '$(sync~spin)' + 'dAppForge'
 export const STATUSBAR_NOT_AUTH = '$(sync-ignored)' + 'dAppForge' 
 export const SERVER_PORT = 54021
 export const API_USERNAME='dappforge-api-user'
+export const SUBSCRIPTION_UNLIMITED_TOKENS=99999
 
 export const defaultChunkOptions = {
   maxSize: 500,
@@ -71,7 +72,8 @@ export const EVENT_NAME = {
   dappforgeSetWorkspaceContext: 'dappforge-set-workspace-context',
   dappforgeStopGeneration: 'dappforge-stop-generation',
   dappforgeTextSelection: 'dappforge-text-selection',
-  dappforgeWorkspaceContext: 'dappforge-workspace-context'
+  dappforgeWorkspaceContext: 'dappforge-workspace-context',
+  dappforgeChatFeedback: 'dappforge-chat-feedback'
 }
 
 export const DAPPFORGE_COMMAND_NAME = {
@@ -112,7 +114,15 @@ export const AUTHENTICATION_EVENT_NAME = {
   authenticate: 'dappforge.authenticate',
   logout: 'dappforge.logout',
   focusAuthenticationTab: 'dappforge.focus-authentication-tab',
-  updateUser: 'dappforge-update-user'
+  updateUser: 'dappforge-update-user',
+  displaySettings: 'dappforge-display-settings',
+  subscribe: 'dappforge.subscribe',
+  checkForValidSubscription: 'dappforge.check-for-valid-subscription',
+  updateEmail: 'dappforge.update-email',
+  setupStripeWebsockets: 'dappforge.setup-stripe-websockets',
+  closeStripeWebsocket: 'dappforge.close-stripe-websocket',
+  cancelStripeSubscription: 'dappforge.cancel-stripe-subscription',
+  retrieveStripeCoupon: 'dappforge.retrieve-stripe-coupon'
 }
 
 export const PROVIDER_EVENT_NAME = {
