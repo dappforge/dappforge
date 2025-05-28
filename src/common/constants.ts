@@ -106,7 +106,8 @@ export const CONVERSATION_EVENT_NAME = {
   removeConversation: 'dappforge.remove-conversation',
   saveConversation: 'dappforge.save-conversation',
   saveLastConversation: 'dappforge.save-last-conversation',
-  setActiveConversation: 'dappforge.set-active-conversation'
+  setActiveConversation: 'dappforge.set-active-conversation',
+  renameConversation: 'dappforge.rename-conversation'
 }
 
 export const AUTHENTICATION_EVENT_NAME = {
@@ -298,7 +299,8 @@ export const WASM_LANGUAGES: { [key: string]: string } = {
   toml: 'toml',
   ts: 'typescript',
   tsx: 'tsx',
-  vue: 'vue'
+  vue: 'vue',
+  solidity: 'solidity'
 }
 
 export const DEFAULT_RELEVANT_FILE_COUNT = 10

@@ -186,10 +186,21 @@ export const getPrefixSuffix = (
   position: Position,
   contextRatio = [0.85, 0.15]
 ): PrefixSuffix => {
-  const currentLine = position.line
-  const numLinesToEnd = document.lineCount - currentLine
+  if (!document || typeof document.lineCount !== 'number') {
+    throw new Error('Invalid document')
+  }
+
+  if (!position || typeof position.line !== 'number' || isNaN(position.line)) {
+    throw new Error(`Invalid position.line: ${position.line}`)
+  }
+
+  const currentLine = Math.max(0, Math.min(position.line, document.lineCount - 1))
+  const numLinesToEnd = Math.max(0, document.lineCount - currentLine - 1)
+
   let numLinesPrefix = Math.floor(Math.abs(numLines * contextRatio[0]))
   let numLinesSuffix = Math.ceil(Math.abs(numLines * contextRatio[1]))
+
+  //console.log(`Current Line: ${currentLine}, Document Line Count: ${document.lineCount}`)
 
   if (numLinesPrefix > currentLine) {
     numLinesSuffix += numLinesPrefix - currentLine
@@ -201,24 +212,32 @@ export const getPrefixSuffix = (
     numLinesSuffix = numLinesToEnd
   }
 
-  const prefixRange = new Range(
-    Math.max(0, currentLine - numLinesPrefix),
-    0,
-    currentLine,
-    position.character
-  )
-  const suffixRange = new Range(
-    currentLine,
-    position.character,
-    currentLine + numLinesSuffix,
-    0
-  )
+  // ✅ Ensure prefixStartLine is always valid
+  const prefixStartLine = Math.max(0, currentLine - numLinesPrefix) || 0
+  const prefixEndLine = Math.min(currentLine, document.lineCount - 1) || 0
 
-  return {
-    prefix: document.getText(prefixRange),
-    suffix: document.getText(suffixRange)
+  // ✅ Ensure suffixStartLine is always valid
+  const suffixStartLine = Math.max(0, currentLine) || 0
+  const suffixEndLine = Math.min(currentLine + numLinesSuffix, document.lineCount - 1) || 0
+
+  // Ensure position.character is within valid range
+  const lineText = document.lineAt(currentLine)?.text ?? ''
+  const character = Math.min(position.character, lineText.length)
+
+  //console.log(`Prefix Range: ${prefixStartLine} → ${prefixEndLine}`)
+  //console.log(`Suffix Range: ${suffixStartLine} → ${suffixEndLine}`)
+
+  try {
+    return {
+      prefix: document.getText(new Range(prefixStartLine, 0, prefixEndLine, character)) || '',
+      suffix: document.getText(new Range(suffixStartLine, character, suffixEndLine, 0)) || '',
+    }
+  } catch (error) {
+    console.error('Error retrieving text:', error)
+    return { prefix: '', suffix: '' }
   }
 }
+
 
 export const getBeforeAndAfter = () => {
   const editor = window.activeTextEditor

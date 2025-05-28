@@ -293,7 +293,7 @@ export async function activate(context: ExtensionContext) {
   if (config.get('enabled')) statusBar.show() 
 
   // Update statusbar depeding on auth state
-  //checkAuthenticationStatus()
+  checkAuthenticationStatus()
   //sidebarProvider.userUpdated()
 
   //vscode.workspace.onDidChangeConfiguration((event) => {

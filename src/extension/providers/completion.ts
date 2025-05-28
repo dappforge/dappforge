@@ -130,6 +130,8 @@ export class CompletionProvider implements InlineCompletionItemProvider {
     const isLastCompletionAccepted =
       this._acceptedLastCompletion && !this.enableSubsequentCompletions
 
+    //console.log(`provideInlineCompletionItems this._numLineContext: ${JSON.stringify(this._numLineContext)} document: ${JSON.stringify(document)} position: ${JSON.stringify(position)}`)
+
     this._prefixSuffix = getPrefixSuffix(
       this._numLineContext,
       document,
@@ -151,8 +153,11 @@ export class CompletionProvider implements InlineCompletionItemProvider {
       return this.provideInlineCompletion()
     }
 
+    const error = userHasValidSubscription()
+    const isValidSubscription = !(error && error.length > 0)
+
     if (
-      userHasValidSubscription().length > 0 ||
+      !isValidSubscription ||
       !this._enabled ||
       !editor ||
       isLastCompletionAccepted ||
@@ -518,8 +523,7 @@ export class CompletionProvider implements InlineCompletionItemProvider {
     if (!this._document || !this._position || !provider) return ''
 
     const documentLanguage = this._document.languageId
-    //this._logger.log(`getPrompt documentLanguage: ${documentLanguage}`)
-    if (provider.provider == apiProviders.dAppForge && documentLanguage != 'rust') return ''
+    if (provider.provider == apiProviders.dAppForge && documentLanguage != 'rust' && documentLanguage != 'solidity') return ''
 
     const fileInteractionContext = await this.getFileInteractionContext()
 

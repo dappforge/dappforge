@@ -69,6 +69,9 @@ export class ConversationHistory {
       case CONVERSATION_EVENT_NAME.saveConversation:
         if (!message.data) return
         return this.saveConversation(message.data)
+      case CONVERSATION_EVENT_NAME.renameConversation:
+        if (!message.data) return
+        return this.renameConversation(message.data)
       case CONVERSATION_EVENT_NAME.clearAllConversations:
         return this.clearAllConversations()
       default:
@@ -180,6 +183,17 @@ export class ConversationHistory {
     this.getNewConversationId()
   }
 
+  renameConversation(conversation: Conversation) {
+    const conversations = this.getConversations() || {}
+    if (!conversation.id) return
+    this._context.globalState.update(CONVERSATION_STORAGE_KEY, {
+      ...conversations,
+      [conversation.id]: conversation
+    })
+    const activeConversation = this.getActiveConversation()
+    if (activeConversation && activeConversation.id == conversation.id) this.setActiveConversation(conversation)
+  }
+
   updateConversation(conversation: Conversation) {
     const conversations = this.getConversations() || {}
     if (!conversation.id) return
@@ -222,8 +236,11 @@ export class ConversationHistory {
     this._context.globalState.update(CONVERSATION_STORAGE_KEY, {
       ...conversations
     })
-    this.setActiveConversation(undefined)
-    this.getAllConversations()
+    const activeConversation = this.getActiveConversation()
+    if (!activeConversation || activeConversation.id == conversation.id) {
+      this.setActiveConversation(undefined)
+      this.getAllConversations()
+    }
   }
 
   clearAllConversations() {

@@ -33,6 +33,7 @@ export type CodeLanguage =
   | 'sql'
   | 'typescriptreactnative'
   | 'xaml'
+  | 'solidity'
 
 export type CodeLanguageDetails = {
   fileExtensions: string[]
@@ -139,6 +140,11 @@ export const supportedLanguages: {
   rust: {
     langName: 'rust',
     fileExtensions: ['.rs', '.rs.in'],
+    syntaxComments: { start: '/*', end: '*/' }
+  },
+  solidity: {
+    langName: 'solidity',
+    fileExtensions: ['.sol'],
     syntaxComments: { start: '/*', end: '*/' }
   },
   sass: {

@@ -350,6 +350,9 @@ export const useConversationHistory = () => {
     Record<string, Conversation>
   >({})
   const [conversation, setConversation] = useState<Conversation>()
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [newTitle, setNewTitle] = useState<string>('');
+
 
   const getConversations = () => {
     global.vscode.postMessage({
@@ -361,6 +364,17 @@ export const useConversationHistory = () => {
     global.vscode.postMessage({
       type: CONVERSATION_EVENT_NAME.getActiveConversation
     })
+  }
+
+  const renameConversation = (conversation: Conversation) => {
+    if (newTitle.trim() && newTitle !== conversation.title) {
+      conversation.title = newTitle
+      global.vscode.postMessage({
+        type: CONVERSATION_EVENT_NAME.renameConversation,
+        data: conversation
+      } as ClientMessage<Conversation>)
+    }
+    setEditingId(null);
   }
 
   const removeConversation = (conversation: Conversation) => {
@@ -418,7 +432,12 @@ export const useConversationHistory = () => {
     removeConversation,
     saveLastConversation,
     clearAllConversations,
-    setActiveConversation
+    setActiveConversation,
+    renameConversation,
+    setEditingId,
+    setNewTitle,
+    editingId,
+    newTitle
   }
 }
 
