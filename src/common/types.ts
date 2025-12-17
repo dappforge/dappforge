@@ -24,17 +24,21 @@ export const dAppForgeRequestTypes = {
   feedback: 'ai-feedback',
   stripe: 'stripe',
   stripeWebhook: 'stripe-webhook',
-  updateConnection: 'update-connection',
+  updateConnection: 'update-connection'
 } as const
 
 export interface RequestOptionsDappForge extends RequestBodyBase {
   accessToken: string
   authorization: string
   userId: string
-  request: { prefix_code?: string, kg_name: string, query?: string, session_id?: string }
+  request: {
+    prefix_code?: string
+    kg_name: string
+    query?: string
+    session_id?: string
+  }
   requestType: (typeof dAppForgeRequestTypes)[keyof typeof dAppForgeRequestTypes]
 }
-
 
 export interface StreamBodyOpenAI extends RequestBodyBase {
   messages?: Message[] | Message
@@ -63,7 +67,7 @@ export interface StreamResponse {
   prompt_eval_duration: number
   eval_count: number
   eval_duration: number
-  type? : string
+  type?: string
   choices: [
     {
       text: string
@@ -110,40 +114,51 @@ export interface Conversation {
 }
 
 export interface User {
-  id: string;
-  accessToken: string;
-  apiPassword: string;
-  fullName?: string;
-  email?: string;
-  avatarUrl?: string;
-  tokenCount?: number;
-  authType?: string;
-  subscriptionId?: string;
-  subscriptionCurrentPeriodEnd?: string;
-  subscriptionTokens?: number;
-  subscriptionUsedFree?: boolean;
-  subscriptionName?: string;
-  subscriptionInterval?: string;
-  subscriptionPriceId?: string;
-  subscriptionItemId?: string;
+  id: string
+  accessToken: string
+  apiPassword: string
+  fullName?: string
+  email?: string
+  avatarUrl?: string
+  tokenCount?: number
+  authType?: string
+  subscriptionId?: string
+  subscriptionCurrentPeriodEnd?: string
+  subscriptionTokens?: number
+  subscriptionUsedFree?: boolean
+  subscriptionName?: string
+  subscriptionInterval?: string
+  subscriptionPriceId?: string
+  subscriptionItemId?: string
+  apiKeyHash?: string
+  apiMaskedKey?: string // Partial API key
+  apiRawKey?: string
+  apiFreeTokenCap?: string // e.g. 100,000 (monthly allowance)
+  apiFreeTokenBalance?: string // Tokens remaining for current month (resets monthly)
+  apiPaidTokenBalance?: string // Purchased tokens remaining (carry over)
+  apiUsedInputTokensMonth?: string // Total input tokens used this month
+  apiUsedOutputTokensMonth?: string // Total output tokens used this month
+  apiFreeResetDate?: string // When to next reset free tokens (start of new month)
+  apiLastUsed?: string // Last time api was used
 }
 
 export interface StripeProduct {
-  id: string;
-  price: string;
-  interval: string;
-  currency: string;
-  features: JSON;
-  name: string;
-  active: Bool;
-  tokens: string;
-  description: string;
-  priceId: string;
-  pk: string;
-  sk: string;
-  createdAt: string;
-  updatedAt: string;
-  timestamp: string;  
+  id: string
+  price: string
+  interval: string
+  currency: string
+  features: JSON
+  name: string
+  active: Bool
+  tokens: string
+  description: string
+  priceId: string
+  pk: string
+  sk: string
+  createdAt: string
+  updatedAt: string
+  timestamp: string
+  productType: string
 }
 
 export const Theme = {
@@ -209,7 +224,7 @@ export interface StreamRequest {
   onEnd?: () => void
   onStart?: (controller: AbortController) => void
   onError?: (error: Error) => void
-  onData: <T = StreamResponse>(streamResponse:  T) => void
+  onData: <T = StreamResponse>(streamResponse: T) => void
 }
 
 export interface UiTabs {
@@ -276,18 +291,18 @@ export interface InferenceProvider {
 }
 
 export interface Peer {
-  publicKey: Buffer;
-  write: (value: string) => boolean;
-  on: (key: string, cb: (data: Buffer) => void) => void;
-  once: (key: string, cb: (data: Buffer) => void) => void;
-  writable: boolean;
-  key: string;
-  discovery_key: string;
+  publicKey: Buffer
+  write: (value: string) => boolean
+  on: (key: string, cb: (data: Buffer) => void) => void
+  once: (key: string, cb: (data: Buffer) => void) => void
+  writable: boolean
+  key: string
+  discovery_key: string
 }
 
 export interface InferenceRequest {
-  key: string;
-  messages: Message[];
+  key: string
+  messages: Message[]
 }
 
 export interface ChunkOptions {

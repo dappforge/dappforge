@@ -1,16 +1,17 @@
 import { ExtensionContext, WebviewView, commands } from 'vscode'
-import { ClientMessage, ServerMessage } from '../common/types'
+import { ClientMessage, ServerMessage, User } from '../common/types'
 import {
   AUTHENTICATION_EVENT_NAME,
   WEBUI_TABS,
   EVENT_NAME
 } from '../common/constants'
-import { 
-  getStoredUser, 
-  setStoredUser, 
-  authenticate, 
+import {
+  getStoredUser,
+  setStoredUser,
+  authenticate,
   checkAuthenticationStatus,
-  processUpdateEmail
+  processUpdateEmail,
+  processGenerateApiKey
 } from './auth-utils'
 
 export class AuthenticationManager {
@@ -26,9 +27,9 @@ export class AuthenticationManager {
   setUpEventListeners() {
     this._webviewView.webview.onDidReceiveMessage(
       async (message: ClientMessage<string>) => {
-        await this.handleMessage(message); // Use await to handle async code
+        await this.handleMessage(message) // Use await to handle async code
       }
-    );
+    )
   }
 
   async handleMessage(message: ClientMessage<string>) {
@@ -55,6 +56,10 @@ export class AuthenticationManager {
         return this.focusAuthenticationTab()
       case AUTHENTICATION_EVENT_NAME.displaySettings:
         return this.displaySettingsForm()
+      case AUTHENTICATION_EVENT_NAME.generateApiKey:
+        return this.generateApiKey()
+      case AUTHENTICATION_EVENT_NAME.resetApiRawKey:
+        return this.resetapiRawKey()
     }
   }
 
@@ -68,7 +73,7 @@ export class AuthenticationManager {
   }
 
   public displaySettingsForm = () => {
-    commands.executeCommand('workbench.action.openSettings', 'dappforge.email');
+    commands.executeCommand('workbench.action.openSettings', 'dappforge.email')
   }
 
   async getAuthenticationStatus() {
@@ -78,9 +83,10 @@ export class AuthenticationManager {
         type: AUTHENTICATION_EVENT_NAME.getAuthenticationState,
         value: {
           data: getStoredUser(),
-          stripeData: stripeData          
+          stripeData: stripeData
         }
-      })})
+      })
+    })
   }
 
   async do_authenticate(authType: string) {
@@ -90,7 +96,8 @@ export class AuthenticationManager {
         value: {
           data: getStoredUser()
         }
-      })})
+      })
+    })
   }
 
   async handleEmailUpdate(email: string) {
@@ -106,4 +113,29 @@ export class AuthenticationManager {
     })
   }
 
+  async generateApiKey() {
+    await processGenerateApiKey(() => {
+      this._webviewView.webview.postMessage({
+        type: AUTHENTICATION_EVENT_NAME.generateApiKey,
+        value: {
+          data: getStoredUser()
+        }
+      })
+    })
+  }
+
+  async resetapiRawKey() {
+    const user: User | null | undefined = getStoredUser()
+    console.log(`user: ${user}`)
+    if (!user) return
+    user.apiRawKey = undefined
+    setStoredUser(user)
+    console.log(`after update user: ${user}`)
+    this._webviewView.webview.postMessage({
+      type: AUTHENTICATION_EVENT_NAME.resetApiRawKey,
+      value: {
+        data: getStoredUser()
+      }
+    })
+  }
 }

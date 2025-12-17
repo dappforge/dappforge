@@ -1,7 +1,5 @@
-
 import WebSocket from 'ws'
 import { Logger } from '../common/logger'
-
 
 const logger = new Logger()
 
@@ -33,7 +31,7 @@ export class WebSocketHandler {
   }
 
   public isSocketOpen() {
-    return (this.socket && this.socket.readyState === WebSocket.OPEN)  
+    return this.socket && this.socket.readyState === WebSocket.OPEN
   }
 
   public getNewUrl(): string {
@@ -54,8 +52,8 @@ export class WebSocketHandler {
   // Function to send a request and handle both streaming and non-streaming responses
   public async sendRequest(
     request: unknown,
-    onData?: (data: unknown) => void,  // Callback for streaming data
-    onComplete?: () => void           // Callback for when the stream ends
+    onData?: (data: unknown) => void, // Callback for streaming data
+    onComplete?: () => void // Callback for when the stream ends
   ): Promise<unknown> {
     if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
       await this.openConnection()
@@ -72,7 +70,11 @@ export class WebSocketHandler {
 
       // Timeout logic to reject if no response within the specified time
       timeoutHandle = setTimeout(() => {
-        reject(new Error('Did not receive a response from the AI API in a timely manner.'))
+        reject(
+          new Error(
+            'Did not receive a response from the AI API in a timely manner.'
+          )
+        )
       }, this.requestTimeout)
 
       // Remove old listener if exists, then re-add
@@ -85,7 +87,7 @@ export class WebSocketHandler {
         try {
           const data = event.data
           const dataStr = typeof data === 'string' ? data : data.toString()
-          //logger.log(`<~~~~~ received data: ${dataStr}`)
+          logger.log(`<~~~~~ received data: ${dataStr}`)
           const parsedData = JSON.parse(dataStr)
 
           // Reset the timeout when data is received
@@ -99,16 +101,23 @@ export class WebSocketHandler {
 
             // Set a new timeout for next data chunk or end of stream
             timeoutHandle = setTimeout(() => {
-              reject(new Error('Did not receive a response from the AI API in a timely manner.'))
+              reject(
+                new Error(
+                  'Did not receive a response from the AI API in a timely manner.'
+                )
+              )
             }, this.requestTimeout)
-
           } else if (parsedData?.event === 'end') {
             clearTimeout(timeoutHandle)
             //if (onComplete) onComplete()
             resolve('')
           } else if (parsedData?.event === 'error') {
             clearTimeout(timeoutHandle)
-            reject(new Error(`Error: ${parsedData?.response?.error} Status: ${parsedData?.status}`))
+            reject(
+              new Error(
+                `Error: ${parsedData?.response?.error} Status: ${parsedData?.status}`
+              )
+            )
             resolve('')
           } else {
             clearTimeout(timeoutHandle)
@@ -124,14 +133,13 @@ export class WebSocketHandler {
 
       this.socket.addEventListener('message', this.handleMessage)
 
-
       this.socket.onerror = () => {
         clearTimeout(timeoutHandle)
         reject(new Error('WebSocket encountered an error.'))
       }
 
       this.socket.onclose = () => {
-        //logger.log('WebSocket connection was closed.')
+        logger.log('WebSocket connection was closed.')
         if (isStreaming && onComplete) {
           onComplete() // Signal the end of the stream
         }
@@ -148,17 +156,17 @@ export class WebSocketHandler {
     return new Promise((resolve, reject) => {
       this.socket = new WebSocket(this.url)
       this.socket.binaryType = 'arraybuffer'
-  
+
       this.socket.onopen = () => {
-        //logger.log('WebSocket connection established')
+        logger.log('WebSocket connection established')
         resolve()
       }
-  
+
       this.socket.onerror = (error) => {
         console.error('WebSocket error:', error)
         reject(new Error('Failed to open WebSocket connection.'))
       }
-  
+
       this.socket.onclose = () => {
         //logger.log('WebSocket connection closed')
       }
@@ -179,5 +187,4 @@ export class WebSocketHandler {
       }
     })
   }
-  
 }

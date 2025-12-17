@@ -48,10 +48,9 @@ import { getBasicAuthToken, getStoredUser } from './auth-utils'
 
 const logger = new Logger()
 
-
 export function resetSatusBar(statusBar: StatusBarItem) {
-    statusBar.text = STATUSBAR_ICON;
-    statusBar.tooltip = ''
+  statusBar.text = STATUSBAR_ICON
+  statusBar.tooltip = ''
 }
 
 export const delayExecution = <T extends () => void>(
@@ -160,16 +159,16 @@ export const getShouldSkipCompletion = (
   const { charBefore } = getBeforeAndAfter()
 
   // Avoid autocomplete on empty lines
-  const line = document.lineAt(cursorPosition.line).text.trim();
+  const line = document.lineAt(cursorPosition.line).text.trim()
   if (line.trim() === '') {
-    return true;
+    return true
   }
 
   // Avoid autocomplete when system menu is shown (ghost text is hidden anyway)
   if (context.selectedCompletionInfo) {
-    return true;
-  }  
-  
+    return true
+  }
+
   if (getSkipVariableDeclataion(charBefore, textAfter)) {
     return true
   }
@@ -194,7 +193,10 @@ export const getPrefixSuffix = (
     throw new Error(`Invalid position.line: ${position.line}`)
   }
 
-  const currentLine = Math.max(0, Math.min(position.line, document.lineCount - 1))
+  const currentLine = Math.max(
+    0,
+    Math.min(position.line, document.lineCount - 1)
+  )
   const numLinesToEnd = Math.max(0, document.lineCount - currentLine - 1)
 
   let numLinesPrefix = Math.floor(Math.abs(numLines * contextRatio[0]))
@@ -218,7 +220,8 @@ export const getPrefixSuffix = (
 
   // ✅ Ensure suffixStartLine is always valid
   const suffixStartLine = Math.max(0, currentLine) || 0
-  const suffixEndLine = Math.min(currentLine + numLinesSuffix, document.lineCount - 1) || 0
+  const suffixEndLine =
+    Math.min(currentLine + numLinesSuffix, document.lineCount - 1) || 0
 
   // Ensure position.character is within valid range
   const lineText = document.lineAt(currentLine)?.text ?? ''
@@ -229,15 +232,20 @@ export const getPrefixSuffix = (
 
   try {
     return {
-      prefix: document.getText(new Range(prefixStartLine, 0, prefixEndLine, character)) || '',
-      suffix: document.getText(new Range(suffixStartLine, character, suffixEndLine, 0)) || '',
+      prefix:
+        document.getText(
+          new Range(prefixStartLine, 0, prefixEndLine, character)
+        ) || '',
+      suffix:
+        document.getText(
+          new Range(suffixStartLine, character, suffixEndLine, 0)
+        ) || ''
     }
   } catch (error) {
     console.error('Error retrieving text:', error)
     return { prefix: '', suffix: '' }
   }
 }
-
 
 export const getBeforeAndAfter = () => {
   const editor = window.activeTextEditor
@@ -352,7 +360,7 @@ export const getChatDataFromProvider = (
       if (data) {
         return processDappForgeChatResponse(data)
       } else {
-        return '';
+        return ''
       }
     case apiProviders.Ollama:
     case apiProviders.OpenWebUI:
@@ -379,90 +387,95 @@ export const getFimDataFromProvider = (
       if (data) {
         return processDappForgeResponse(data)
       } else {
-        return '';
+        return ''
       }
 
     case apiProviders.Ollama:
     case apiProviders.OpenWebUI:
-      return data?.response;
+      return data?.response
 
     case apiProviders.LlamaCpp:
-      return data?.content;
+      return data?.content
 
     case apiProviders.LiteLLM:
-      return data?.choices[0].delta.content;
+      return data?.choices[0].delta.content
 
     default:
-      if (!data?.choices.length) return;
+      if (!data?.choices.length) return
       if (data?.choices[0].text === 'undefined') {
-        return '';
+        return ''
       }
-      return data?.choices[0].text ? data?.choices[0].text : '';
+      return data?.choices[0].text ? data?.choices[0].text : ''
   }
-};
+}
 
 function processDappForgeChatResponse(data: StreamResponse): string {
-  const responseJson: { 
-    error?: string, 
-    reply?: string 
-  } = data.response as { 
-    error?: string, 
-    reply?: string 
+  const responseJson: {
+    error?: string
+    reply?: string
+  } = data.response as {
+    error?: string
+    reply?: string
   }
 
   // Check the status
   if (Number(data.status) !== 200) {
-    throw Error(`Status: ${data.status} Error: ${responseJson.error}` || 'Unknown error');
+    throw Error(
+      `Status: ${data.status} Error: ${responseJson.error}` || 'Unknown error'
+    )
   }
-  
-  let chatReply = '';
+
+  let chatReply = ''
 
   // Access the 'generated_code' field directly
   if (responseJson.reply) {
     // Unescape control characters
-    chatReply = unescapeControlCharacters(responseJson.reply);
+    chatReply = unescapeControlCharacters(responseJson.reply)
 
     // Trim ends of all lines
     //chatReply = chatReply.split('\n').map((v) => v.trimEnd()).join('\n');
-    
-    //logger.log(`<~~~~~ chatReply: ${chatReply}`);
+
+    logger.log(`<~~~~~ chatReply: ${chatReply}`)
   }
-  return chatReply;  
+  return chatReply
 }
 
 function processDappForgeResponse(data: StreamResponse): string {
-    // No need for JSON.parse since the response is already an object
-    const responseJson: { 
-      error?: string, 
-      generated_code?: string, 
-      kg_edges?: [], 
-      subgraph_plot?: string } = data.response as { 
-        error?: string, 
-        generated_code?: string, 
-        kg_edges?: [], 
-        subgraph_plot?: string };
+  // No need for JSON.parse since the response is already an object
+  const responseJson: {
+    error?: string
+    generated_code?: string
+    kg_edges?: []
+    subgraph_plot?: string
+  } = data.response as {
+    error?: string
+    generated_code?: string
+    kg_edges?: []
+    subgraph_plot?: string
+  }
 
-    // Check the status
-    if (Number(data.status) !== 200) {
-      throw Error(`Status: ${data.status} Error: ${responseJson.error}` || 'Unknown error');
-    }
+  // Check the status
+  if (Number(data.status) !== 200) {
+    throw Error(
+      `Status: ${data.status} Error: ${responseJson.error}` || 'Unknown error'
+    )
+  }
 
-    let code = '';
+  let code = ''
 
-    // Access the 'generated_code' field directly
-    if (responseJson.generated_code) {
-      code = responseJson.generated_code;
-      // Unescape control characters
-      code = unescapeControlCharacters(code);
+  // Access the 'generated_code' field directly
+  if (responseJson.generated_code) {
+    code = responseJson.generated_code
+    // Unescape control characters
+    code = unescapeControlCharacters(code)
 
-      // Trim ends of all lines
-      //code = code.split('\n').map((v) => v.trimEnd()).join('\n');
-      
-      //logger.log(`<~~~~~ completion code received: ${code}`);
-    }
-    return code;  
+    // Trim ends of all lines
+    //code = code.split('\n').map((v) => v.trimEnd()).join('\n');
+
+    logger.log(`<~~~~~ completion code received: ${code}`)
+  }
+  return code
 }
-
 
 export function isStreamWithDataPrefix(stringBuffer: string) {
   return stringBuffer.startsWith('data:')
@@ -704,75 +717,93 @@ Number characters in all messages = ${
   )
 }
 
-export function extractHostAndPort(websocketUri: string): { host: string, port: number } {
-  const url = new URL(websocketUri);
-  const host = url.hostname;
-  const port = parseInt(url.port, 10);
-  return { host, port };
+export function extractHostAndPort(websocketUri: string): {
+  host: string
+  port: number
+} {
+  const url = new URL(websocketUri)
+  const host = url.hostname
+  const port = parseInt(url.port, 10)
+  return { host, port }
 }
 
 export function unescapeControlCharacters(str: string): string {
   // Define a mapping of escaped characters to their actual characters
   const controlCharacterMap: { [key: string]: string } = {
-      '\\n': '\n',
-      '\\t': '\t',
-      '\\r': '\r',
-      '\\b': '\b',
-      '\\f': '\f',
-      '\\v': '\v',
-      '\\0': '\0',
-      '\\\\': '\\', // To handle escaped backslash
-      '\\"': '"',  // To handle escaped double quote
-      '\\\'': '\'',  // To handle escaped single quote
+    '\\n': '\n',
+    '\\t': '\t',
+    '\\r': '\r',
+    '\\b': '\b',
+    '\\f': '\f',
+    '\\v': '\v',
+    '\\0': '\0',
+    '\\\\': '\\', // To handle escaped backslash
+    '\\"': '"', // To handle escaped double quote
+    "\\'": "'" // To handle escaped single quote
   }
 
   // Create a regular expression to match all escaped control characters
   const controlCharacterRegex = /\\[ntrbfv0\\'"]/g
 
   // Replace the escaped sequences with their corresponding control characters
-  return str.replace(controlCharacterRegex, (match) => controlCharacterMap[match] || match)
+  return str.replace(
+    controlCharacterRegex,
+    (match) => controlCharacterMap[match] || match
+  )
 }
 
 export function generateConversationTitle(): string {
-  const currentDate = new Date();
+  const currentDate = new Date()
 
   // Manually extract date components
-  const year = currentDate.getFullYear();
+  const year = currentDate.getFullYear()
   const monthNames = [
-    'January', 'February', 'March', 'April', 'May', 'June', 
-    'July', 'August', 'September', 'October', 'November', 'December'
-  ];
-  const month = monthNames[currentDate.getMonth()];
-  const day = currentDate.getDate();
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December'
+  ]
+  const month = monthNames[currentDate.getMonth()]
+  const day = currentDate.getDate()
 
   // Manually extract time components
-  let hours = currentDate.getHours();
-  const minutes = currentDate.getMinutes().toString().padStart(2, '0');
-  const seconds = currentDate.getSeconds().toString().padStart(2, '0');
-  const ampm = hours >= 12 ? 'PM' : 'AM';
-  hours = hours % 12 || 12; // Convert 24-hour time to 12-hour time
+  let hours = currentDate.getHours()
+  const minutes = currentDate.getMinutes().toString().padStart(2, '0')
+  const seconds = currentDate.getSeconds().toString().padStart(2, '0')
+  const ampm = hours >= 12 ? 'PM' : 'AM'
+  hours = hours % 12 || 12 // Convert 24-hour time to 12-hour time
 
   // Generate the conversation title with manually formatted date and time
-  const formattedDate = `${month} ${day}, ${year}`;
-  const formattedTime = `${hours}:${minutes}:${seconds} ${ampm}`;
+  const formattedDate = `${month} ${day}, ${year}`
+  const formattedTime = `${hours}:${minutes}:${seconds} ${ampm}`
 
-  return `${formattedDate} at ${formattedTime}`;
+  return `${formattedDate} at ${formattedTime}`
 }
 
 // Check github token is still active, retrieve user details as the same time
 export const sendFeedback = (
-  feedbackType: string, 
+  feedbackType: string,
   vote: string,
   feedbackText: string,
   code: string,
   context: ExtensionContext
 ) => {
-  const config = workspace.getConfiguration('dappforge');
+  const config = workspace.getConfiguration('dappforge')
   const apiBaseUrl = config.get('apiUri')
   //logger.log(`~~~~~> sendFeedback feedbackUri: ${apiBaseUrl} feedbackType: ${feedbackType} vote: ${vote} feedbackText: ${feedbackText} code: ${code}`)
   const user: User | null | undefined = getStoredUser()
-  const conversationId: string | undefined = context?.globalState.get(ACTIVE_CONVERSATION_ID_STORAGE_KEY)
-  
+  const conversationId: string | undefined = context?.globalState.get(
+    ACTIVE_CONVERSATION_ID_STORAGE_KEY
+  )
+
   if (user) {
     try {
       const fetchOptions = {
@@ -787,18 +818,18 @@ export const sendFeedback = (
           feedbackType: feedbackType,
           vote: vote,
           feedbackText: feedbackText,
-          code: code  
-        }),
-      }      
+          code: code
+        })
+      }
       const uri = `${apiBaseUrl}/ai/feedback/${user.id}`
       fetch(uri, fetchOptions)
-        .then(response => {
+        .then((response) => {
           if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`)
           }
           //logger.log(`Feedback sent successfully: ${response.status}`)
         })
-        .catch(e => {
+        .catch((e) => {
           if (e instanceof Error) {
             logger.error(e)
           } else {
@@ -807,7 +838,7 @@ export const sendFeedback = (
         })
     } catch (e: unknown) {
       if (e instanceof Error) {
-        logger.error(e);
+        logger.error(e)
       } else {
         //logger.log(`-----> sendFeedback: error: ${e}`);
       }

@@ -18,6 +18,7 @@ import {
   User
 } from '../common/types'
 import { DappforgeProvider } from '../extension/provider-manager'
+import { logger } from 'handlebars'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const global = globalThis as any
@@ -207,7 +208,9 @@ export const useTemplates = () => {
 }
 
 export const useProviders = () => {
-  const [providers, setProviders] = useState<Record<string, DappforgeProvider>>({})
+  const [providers, setProviders] = useState<Record<string, DappforgeProvider>>(
+    {}
+  )
   const [chatProvider, setChatProvider] = useState<DappforgeProvider>()
   const [fimProvider, setFimProvider] = useState<DappforgeProvider>()
   const handler = (event: MessageEvent) => {
@@ -216,7 +219,10 @@ export const useProviders = () => {
     > = event.data
     if (message?.type === PROVIDER_EVENT_NAME.getAllProviders) {
       if (message.value.data) {
-        const providers = message.value.data as Record<string, DappforgeProvider>
+        const providers = message.value.data as Record<
+          string,
+          DappforgeProvider
+        >
         setProviders(providers)
       }
     }
@@ -350,9 +356,8 @@ export const useConversationHistory = () => {
     Record<string, Conversation>
   >({})
   const [conversation, setConversation] = useState<Conversation>()
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [newTitle, setNewTitle] = useState<string>('');
-
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [newTitle, setNewTitle] = useState<string>('')
 
   const getConversations = () => {
     global.vscode.postMessage({
@@ -374,7 +379,7 @@ export const useConversationHistory = () => {
         data: conversation
       } as ClientMessage<Conversation>)
     }
-    setEditingId(null);
+    setEditingId(null)
   }
 
   const removeConversation = (conversation: Conversation) => {
@@ -476,26 +481,27 @@ const useAutosizeTextArea = (
 }
 
 export const useAuthentication = () => {
-  const [user, setUser] = useState<User | null>(null); // Store the authenticated user
-  const [completed, setCompleted] = useState<boolean>(false); 
-  const [stripeProducts, setStripeProducts] = useState<Array<StripeProduct> | null>(null); // Store the authenticated user
-  const [updatingEmail, setUpdatingEmail] = useState(false);
+  const [user, setUser] = useState<User | null>(null) // Store the authenticated user
+  const [completed, setCompleted] = useState<boolean>(false)
+  const [stripeProducts, setStripeProducts] =
+    useState<Array<StripeProduct> | null>(null) // Store the authenticated user
+  const [updatingEmail, setUpdatingEmail] = useState(false)
 
   const updateEmail = async (email: string) => {
-    setUpdatingEmail(true);
+    setUpdatingEmail(true)
     global.vscode.postMessage({
       type: AUTHENTICATION_EVENT_NAME.updateEmail,
       data: email
-    } as ClientMessage<string>);    
-  };
+    } as ClientMessage<string>)
+  }
 
   // Function to handle the authentication state
   const getAuthenticationState = () => {
     setCompleted(false)
     global.vscode.postMessage({
-      type: AUTHENTICATION_EVENT_NAME.getAuthenticationState,
-    } as ClientMessage<null>);
-  };
+      type: AUTHENTICATION_EVENT_NAME.getAuthenticationState
+    } as ClientMessage<null>)
+  }
 
   // Function to authenticate the user
   const authenticate = (authType: string) => {
@@ -503,73 +509,79 @@ export const useAuthentication = () => {
     global.vscode.postMessage({
       type: AUTHENTICATION_EVENT_NAME.authenticate,
       data: authType
-    } as ClientMessage<string>);
-  };
+    } as ClientMessage<string>)
+  }
 
   // Function to logout the user
   const logout = () => {
     setCompleted(false)
     global.vscode.postMessage({
-      type: AUTHENTICATION_EVENT_NAME.logout,
-    } as ClientMessage<null>);
+      type: AUTHENTICATION_EVENT_NAME.logout
+    } as ClientMessage<null>)
     global.vscode.postMessage({
-      type: AUTHENTICATION_EVENT_NAME.closeStripeWebsocket,
-    } as ClientMessage<null>);
-
-  };  
+      type: AUTHENTICATION_EVENT_NAME.closeStripeWebsocket
+    } as ClientMessage<null>)
+  }
 
   // Handler to receive messages from the VS Code extension host
   const messageHandler = (event: MessageEvent) => {
-    const message = event.data;
-    if ((message.type === AUTHENTICATION_EVENT_NAME.getAuthenticationState || 
-      message.type === AUTHENTICATION_EVENT_NAME.authenticate)) {
+    const message = event.data
+    if (
+      message.type === AUTHENTICATION_EVENT_NAME.getAuthenticationState ||
+      message.type === AUTHENTICATION_EVENT_NAME.authenticate
+    ) {
       if (message.value?.data) {
         if (message.type === AUTHENTICATION_EVENT_NAME.authenticate) {
           // If authenticated retrieve the latest user details
           global.vscode.postMessage({
-            type: AUTHENTICATION_EVENT_NAME.getAuthenticationState,
-          } as ClientMessage<null>);  
+            type: AUTHENTICATION_EVENT_NAME.getAuthenticationState
+          } as ClientMessage<null>)
         }
-        setUser(message.value.data); // Update user state with the authentication data
+        setUser(message.value.data) // Update user state with the authentication data
         if (message.type === AUTHENTICATION_EVENT_NAME.getAuthenticationState) {
-          // Setup stripe websockets for subscriptions    
+          // Setup stripe websockets for subscriptions
           global.vscode.postMessage({
-            type: AUTHENTICATION_EVENT_NAME.setupStripeWebsockets,
-          } as ClientMessage<null>)      
+            type: AUTHENTICATION_EVENT_NAME.setupStripeWebsockets
+          } as ClientMessage<null>)
           global.vscode.postMessage({
-            type: AUTHENTICATION_EVENT_NAME.checkForValidSubscription,
-          } as ClientMessage<null>)      
+            type: AUTHENTICATION_EVENT_NAME.checkForValidSubscription
+          } as ClientMessage<null>)
         }
       }
       if (message.value?.stripeData) {
-        if (Object.prototype.hasOwnProperty.call(message.value.stripeData, 'stripeProducts') && 
-          message.value?.stripeData['stripeProducts'].length > 0)
+        if (
+          Object.prototype.hasOwnProperty.call(
+            message.value.stripeData,
+            'stripeProducts'
+          ) &&
+          message.value?.stripeData['stripeProducts'].length > 0
+        )
           setStripeProducts(message.value.stripeData['stripeProducts'])
-      }      
+      }
       setCompleted(true)
       setUpdatingEmail(false)
     } else if (message.type === AUTHENTICATION_EVENT_NAME.updateUser) {
       if (message.value?.data) {
-        setUser(message.value.data); 
+        setUser(message.value.data)
       }
     } else if (message.type === AUTHENTICATION_EVENT_NAME.logout) {
-      setUser(null); // Clear the user state on logout
+      setUser(null) // Clear the user state on logout
       setCompleted(true)
     }
-  };
+  }
 
   // Effect to set up and clean up the message listener
   useEffect(() => {
-    window.addEventListener('message', messageHandler);
+    window.addEventListener('message', messageHandler)
 
     // Request the current authentication state on mount
     const checkAuthenticationState = async () => {
-      await getAuthenticationState();
-    };
-    checkAuthenticationState();
+      await getAuthenticationState()
+    }
+    checkAuthenticationState()
 
-    return () => window.removeEventListener('message', messageHandler);
-  }, []);
+    return () => window.removeEventListener('message', messageHandler)
+  }, [])
 
   return {
     completed,
@@ -580,31 +592,31 @@ export const useAuthentication = () => {
     stripeProducts,
     updateEmail,
     updatingEmail
-  };
-};
-
+  }
+}
 
 export const useSubscriptions = () => {
-  const [subscriptionInProgress, setSubscriptionInProgress] = useState<string>(''); 
-  const [validSubscription, setValidSubscription] = useState<boolean>(false); 
-  const [discount, setDiscount] = useState<number>(0);
-  const [applyingCoupon, setApplyingCoupon] = useState<boolean>(false);
-  const [couponError, setCouponError] = useState<string>('');
-  const [couponApplied, setCouponApplied] = useState<boolean>(false);
-  const [coupon, setCoupon] = useState<string>('');
+  const [subscriptionInProgress, setSubscriptionInProgress] =
+    useState<string>('')
+  const [validSubscription, setValidSubscription] = useState<boolean>(false)
+  const [discount, setDiscount] = useState<number>(0)
+  const [applyingCoupon, setApplyingCoupon] = useState<boolean>(false)
+  const [couponError, setCouponError] = useState<string>('')
+  const [couponApplied, setCouponApplied] = useState<boolean>(false)
+  const [coupon, setCoupon] = useState<string>('')
 
   const applyCoupon = async (coupon: string) => {
     setCouponError('')
     setDiscount(0)
     setApplyingCoupon(false)
-    if (!coupon.trim()) return;
+    if (!coupon.trim()) return
     setApplyingCoupon(true)
     setSubscriptionInProgress('Applying coupon code...')
     global.vscode.postMessage({
       type: AUTHENTICATION_EVENT_NAME.retrieveStripeCoupon,
       data: coupon
-    } as ClientMessage<string>);
-  };
+    } as ClientMessage<string>)
+  }
 
   const handleRemoveCoupon = () => {
     setCouponError('')
@@ -616,16 +628,16 @@ export const useSubscriptions = () => {
 
   const checkForValidSubscription = () => {
     global.vscode.postMessage({
-      type: AUTHENTICATION_EVENT_NAME.checkForValidSubscription,
-    } as ClientMessage<null>);
+      type: AUTHENTICATION_EVENT_NAME.checkForValidSubscription
+    } as ClientMessage<null>)
   }
 
   const subscribe = (priceId: string, coupon: string) => {
     setSubscriptionInProgress('Processing your subscription...')
     global.vscode.postMessage({
       type: AUTHENTICATION_EVENT_NAME.subscribe,
-      data: JSON.stringify({priceId: priceId, coupon: coupon})
-    } as ClientMessage<string>);
+      data: JSON.stringify({ priceId: priceId, coupon: coupon })
+    } as ClientMessage<string>)
   }
 
   const cancelSubscription = (subscriptionId: string) => {
@@ -633,58 +645,61 @@ export const useSubscriptions = () => {
     global.vscode.postMessage({
       type: AUTHENTICATION_EVENT_NAME.cancelStripeSubscription,
       data: subscriptionId
-    } as ClientMessage<string>);
+    } as ClientMessage<string>)
   }
 
   // Handler to receive messages from the VS Code extension host
   const messageHandler = (event: MessageEvent) => {
-    const message = event.data;
+    const message = event.data
     if (message.type === AUTHENTICATION_EVENT_NAME.subscribe) {
       if (message.value?.data && message.value?.data.length > 0) {
         setValidSubscription(false)
       } else {
-        checkSubscription() 
+        checkSubscription()
       }
       setSubscriptionInProgress('')
-    } else if (message.type === AUTHENTICATION_EVENT_NAME.cancelStripeSubscription) {
+    } else if (
+      message.type === AUTHENTICATION_EVENT_NAME.cancelStripeSubscription
+    ) {
       setSubscriptionInProgress('')
       handleRemoveCoupon()
       checkSubscription()
-    } else if (message.type === AUTHENTICATION_EVENT_NAME.retrieveStripeCoupon) {
+    } else if (
+      message.type === AUTHENTICATION_EVENT_NAME.retrieveStripeCoupon
+    ) {
       if (message.value?.error && message.value?.error.length > 0) {
         setCouponError(message.value?.error)
         setDiscount(0)
         setCoupon('')
         setCouponApplied(false)
       } else {
-        console.log(`hooks message.value?.error: ${message.value?.error}`)
         setCouponError('')
         setDiscount(message.value?.discount)
         setCouponApplied(true)
       }
       setSubscriptionInProgress('')
       setApplyingCoupon(false)
-    } else if (message.type === AUTHENTICATION_EVENT_NAME.checkForValidSubscription) {
-      console.log(`yyy hooks checkForValidSubscription checkForValidSubscription message.value.data: ${message.value.data}`)
-      setValidSubscription(message.value.data); 
-      console.log(`yyy hooks checkForValidSubscription validSubscription: ${validSubscription}`)
+    } else if (
+      message.type === AUTHENTICATION_EVENT_NAME.checkForValidSubscription
+    ) {
+      setValidSubscription(message.value.data)
       setSubscriptionInProgress('')
       handleRemoveCoupon()
     }
-  };
+  }
 
   const checkSubscription = async () => {
-    await checkForValidSubscription();
-  };
+    await checkForValidSubscription()
+  }
 
   // Effect to set up and clean up the message listener
   useEffect(() => {
-    window.addEventListener('message', messageHandler);
+    window.addEventListener('message', messageHandler)
 
-    checkSubscription();
+    checkSubscription()
 
-    return () => window.removeEventListener('message', messageHandler);
-  }, []);
+    return () => window.removeEventListener('message', messageHandler)
+  }, [])
 
   return {
     subscribe,
@@ -700,7 +715,112 @@ export const useSubscriptions = () => {
     coupon,
     setCoupon,
     handleRemoveCoupon
-  };
-};
+  }
+}
+
+export const useApi = () => {
+  const [user, setUser] = useState<User | null>(null)
+  const [completed, setCompleted] = useState<boolean>(false)
+  const [loading, setLoading] = useState<boolean>(false)
+  const [stripeProducts, setStripeProducts] =
+    useState<Array<StripeProduct> | null>(null)
+  const [rawApiKey, setRawApiKey] = useState<string | null>(null)
+  const [topUpInProgress, setTopUpInProgress] = useState<string>('')
+
+  // Function to handle the authentication state
+  const getAuthenticationState = () => {
+    setCompleted(false)
+    global.vscode.postMessage({
+      type: AUTHENTICATION_EVENT_NAME.getAuthenticationState
+    } as ClientMessage<null>)
+  }
+
+  // Generate a new API key
+  const generateApiKey = () => {
+    setCompleted(false)
+    setLoading(true)
+    global.vscode.postMessage({
+      type: AUTHENTICATION_EVENT_NAME.generateApiKey
+    } as ClientMessage<null>)
+  }
+
+  const resetRawApiKey = () => {
+    setCompleted(false)
+    setLoading(true)
+    console.log('resetRawApiKey')
+    global.vscode.postMessage({
+      type: AUTHENTICATION_EVENT_NAME.resetApiRawKey
+    } as ClientMessage<null>)
+  }
+
+  const buyTopUp = (priceId: string) => {
+    setTopUpInProgress('Processing your top up...')
+    global.vscode.postMessage({
+      type: AUTHENTICATION_EVENT_NAME.buyTopUp,
+      data: JSON.stringify({ priceId: priceId })
+    } as ClientMessage<string>)
+  }
+
+  // Handler to receive messages from the VS Code extension host
+  const messageHandler = (event: MessageEvent) => {
+    const message = event.data
+    if (
+      message.type === AUTHENTICATION_EVENT_NAME.getAuthenticationState ||
+      message.type === AUTHENTICATION_EVENT_NAME.generateApiKey ||
+      message.type === AUTHENTICATION_EVENT_NAME.resetApiRawKey ||
+      message.type === AUTHENTICATION_EVENT_NAME.buyTopUp
+    ) {
+      console.log(`message: ${message}`)
+      if (message.value?.data) {
+        //console.log(
+        //  `message.value.data: ${JSON.stringify(message.value.data, null, 2)}`
+        // )
+        setUser(message.value.data) // Update user state with the authentication data
+      }
+      if (message.type === AUTHENTICATION_EVENT_NAME.getAuthenticationState) {
+        if (message.value?.stripeData) {
+          if (
+            Object.prototype.hasOwnProperty.call(
+              message.value.stripeData,
+              'stripeProducts'
+            ) &&
+            message.value?.stripeData['stripeProducts'].length > 0
+          ) {
+            setStripeProducts(message.value.stripeData['stripeProducts'])
+          }
+        }
+      }
+      setCompleted(true)
+      setLoading(false)
+      setTopUpInProgress('')
+    }
+  }
+
+  // Effect to set up and clean up the message listener
+  useEffect(() => {
+    window.addEventListener('message', messageHandler)
+
+    // Request the current authentication state on mount
+    const checkAuthenticationState = async () => {
+      await getAuthenticationState()
+      await resetRawApiKey()
+    }
+    checkAuthenticationState()
+
+    return () => window.removeEventListener('message', messageHandler)
+  }, [])
+
+  return {
+    completed,
+    user,
+    stripeProducts,
+    rawApiKey,
+    loading,
+    topUpInProgress,
+    generateApiKey,
+    resetRawApiKey,
+    buyTopUp
+  }
+}
 
 export default useAutosizeTextArea

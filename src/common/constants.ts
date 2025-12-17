@@ -6,13 +6,14 @@ export const USER = 'user'
 export const DAPPFORGE = 'dappforge'
 export const SYSTEM = 'system'
 export const YOU = 'You'
-export const EMPTY_MESAGE = 'Sorry, I don’t understand or an error occurred. Please try again.'
+export const EMPTY_MESAGE =
+  'Sorry, I don’t understand or an error occurred. Please try again.'
 export const MODEL_ERROR = 'Sorry, something went wrong...'
 export const OPENING_BRACKETS = ['[', '{', '(']
 export const CLOSING_BRACKETS = [']', '}', ')']
 export const OPENING_TAGS = ['<']
 export const CLOSING_TAGS = ['</']
-export const QUOTES = ['"', '\'', '`']
+export const QUOTES = ['"', "'", '`']
 export const ALL_BRACKETS = [...OPENING_BRACKETS, ...CLOSING_BRACKETS] as const
 export const BRACKET_REGEX = /^[()[\]{}]+$/
 export const NORMALIZE_REGEX = /\s*\r?\n|\r/g
@@ -27,10 +28,12 @@ export const MAX_EMPTY_COMPLETION_CHARS = 250
 export const DEFAULT_RERANK_THRESHOLD = 0.5
 export const STATUSBAR_ICON = '$(chip)' + 'dAppForge'
 export const STATUSBAR_BUSY = '$(sync~spin)' + 'dAppForge'
-export const STATUSBAR_NOT_AUTH = '$(sync-ignored)' + 'dAppForge' 
+export const STATUSBAR_NOT_AUTH = '$(sync-ignored)' + 'dAppForge'
 export const SERVER_PORT = 54021
-export const API_USERNAME='dappforge-api-user'
-export const SUBSCRIPTION_UNLIMITED_TOKENS=99999
+export const API_USERNAME = 'dappforge-api-user'
+export const SUBSCRIPTION_UNLIMITED_TOKENS = 99999
+export const PRODUCT_TYPE_AI_PLUGIN = 'AI-PLUGIN'
+export const PRODUCT_TYPE_AI_API = 'AI-API'
 
 export const defaultChunkOptions = {
   maxSize: 500,
@@ -87,6 +90,7 @@ export const DAPPFORGE_COMMAND_NAME = {
   generateDocs: 'dappforge.aiGenerateDocs',
   hideBackButton: 'dappforge.hideBackButton',
   manageProviders: 'dappforge.manageProviders',
+  apiDashboard: 'dappforge.apiDashboard',
   manageTemplates: 'dappforge.manageTemplates',
   newConversation: 'dappforge.aiNewChat',
   openChat: 'dappforge.aiOpenChat',
@@ -123,7 +127,10 @@ export const AUTHENTICATION_EVENT_NAME = {
   setupStripeWebsockets: 'dappforge.setup-stripe-websockets',
   closeStripeWebsocket: 'dappforge.close-stripe-websocket',
   cancelStripeSubscription: 'dappforge.cancel-stripe-subscription',
-  retrieveStripeCoupon: 'dappforge.retrieve-stripe-coupon'
+  retrieveStripeCoupon: 'dappforge.retrieve-stripe-coupon',
+  generateApiKey: 'dappforge.generate-api-key',
+  resetApiRawKey: 'dappforge.reset-api-raw-key',
+  buyTopUp: 'dappforge.buy-top-up'
 }
 
 export const PROVIDER_EVENT_NAME = {
@@ -141,7 +148,8 @@ export const PROVIDER_EVENT_NAME = {
 }
 
 export const ACTIVE_CONVERSATION_STORAGE_KEY = 'dappforge.active-conversation'
-export const ACTIVE_CONVERSATION_ID_STORAGE_KEY = 'dappforge.active-conversation.id'
+export const ACTIVE_CONVERSATION_ID_STORAGE_KEY =
+  'dappforge.active-conversation.id'
 export const ACTIVE_CHAT_PROVIDER_STORAGE_KEY = 'dappforge.active-chat-provider'
 export const ACTIVE_FIM_PROVIDER_STORAGE_KEY = 'dappforge.active-fim-provider'
 export const CONVERSATION_STORAGE_KEY = 'dappforge.conversations'
@@ -171,6 +179,7 @@ export const EXTENSION_CONTEXT_NAME = {
   dappforgeGeneratingText: 'dappforgeGeneratingText',
   dappforgeManageProviders: 'dappforgeManageProviders',
   dappforgeManageTemplates: 'dappforgeManageTemplates',
+  dappforgeApiDashboard: 'dappforgeApiDashboard',
   dappforgeRerankThreshold: 'dappforgeRerankThreshold',
   dappforgeMaxChunkSize: 'dappforgeMaxChunkSize',
   dappforgeMinChunkSize: 'dappforgeMinChunkSize',
@@ -185,7 +194,8 @@ export const WEBUI_TABS = {
   history: 'history',
   providers: 'providers',
   settings: 'templates',
-  authenticate: 'authenticate'
+  authenticate: 'authenticate',
+  apiDashboard: 'api-dashboard'
 }
 
 export const FIM_TEMPLATE_FORMAT = {
@@ -333,4 +343,3 @@ export const MULTILINE_INSIDE = [
 export const MULTILINE_TYPES = [...MULTILINE_OUTSIDE, ...MULTILINE_INSIDE]
 
 export const MULTI_LINE_DELIMITERS = ['\n\n', '\r\n\r\n']
-

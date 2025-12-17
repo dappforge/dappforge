@@ -6,21 +6,21 @@ import { ConversationHistory } from './conversation-history'
 import { Authentication } from './authenticate'
 import { useAuthentication } from './hooks'
 import { Settings } from './settings'
-import {
-  AUTHENTICATION_EVENT_NAME
-} from '../common/constants'
-  
+import { ApiDashboard } from './api-dashboard'
+import { AUTHENTICATION_EVENT_NAME } from '../common/constants'
+
 const tabs: Record<string, JSX.Element> = {
   [WEBUI_TABS.authenticate]: <Authentication />,
   [WEBUI_TABS.chat]: <Chat />,
   [WEBUI_TABS.settings]: <Settings />,
+  [WEBUI_TABS.apiDashboard]: <ApiDashboard />
   //[WEBUI_TABS.providers]: <Providers />
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const global = globalThis as any
-export const Main = () => {  
-  const {completed, user} = useAuthentication()
+export const Main = () => {
+  const { completed, user, getAuthenticationState } = useAuthentication()
   const [tab, setTab] = useState<string | undefined>(WEBUI_TABS.chat)
 
   const handler = (event: MessageEvent) => {
@@ -31,30 +31,36 @@ export const Main = () => {
   }
 
   const validEmail = (email: string | undefined) => {
-    return email && email.trim().length > 0 &&
-      /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) 
+    return (
+      email &&
+      email.trim().length > 0 &&
+      /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+    )
   }
 
   useEffect(() => {
-    window.addEventListener('message', handler);
-    return () => window.removeEventListener('message', handler);
-  }, []);
+    window.addEventListener('message', handler)
+    const checkAuthenticationState = async () => {
+      await getAuthenticationState()
+    }
+    checkAuthenticationState()
+    return () => window.removeEventListener('message', handler)
+  }, [])
 
   useEffect(() => {
-    if (completed && (
-      !user || 
-      !validEmail(user.email)) ) { //&& tab !== WEBUI_TABS.authenticate) {
-      setTab(WEBUI_TABS.authenticate);
+    if (completed && (!user || !validEmail(user.email))) {
+      //&& tab !== WEBUI_TABS.authenticate) {
+      setTab(WEBUI_TABS.authenticate)
       //if (user && !validEmail(user.email)) {
       //  global.vscode.postMessage({
       //    type: AUTHENTICATION_EVENT_NAME.displaySettings
       //  } as ClientMessage)
       //}
     }
-  }, [completed, user, tab]); 
+  }, [completed, user, tab])
 
   if (!completed) {
-    return <div>Loading...</div>; // Display a loading indicator while checking authentication
+    return <div>Loading...</div> // Display a loading indicator while checking authentication
   }
 
   //getUser()

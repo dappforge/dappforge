@@ -13,9 +13,7 @@ import * as vscode from 'vscode'
 import { CompletionProvider } from './extension/providers/completion'
 import { SidebarProvider } from './extension/providers/sidebar'
 import { SessionManager } from './extension/session-manager'
-import {
-  delayExecution
-} from './extension/utils'
+import { delayExecution } from './extension/utils'
 import { setContext } from './extension/context'
 import {
   EXTENSION_CONTEXT_NAME,
@@ -28,14 +26,10 @@ import {
   DEFAULT_ACTION_TEMPLATES
 } from './common/constants'
 import { TemplateProvider } from './extension/template-provider'
-import {
-  ClientMessage,
-  ServerMessage
-} from './common/types'
+import { ClientMessage, ServerMessage } from './common/types'
 import { FileInteractionCache } from './extension/file-interaction'
 import { GlobalStateWatcher } from './extension/event-emitter'
 import { checkAuthenticationStatus } from './extension/auth-utils'
-
 
 export async function activate(context: ExtensionContext) {
   setContext(context)
@@ -50,14 +44,14 @@ export async function activate(context: ExtensionContext) {
     statusBar,
     context,
     templateDir,
-    sessionManager,
+    sessionManager
   )
 
   const completionProvider = new CompletionProvider(
     statusBar,
     fileInteractionCache,
     templateProvider,
-    context,
+    context
   )
 
   // Do some init of default values
@@ -88,9 +82,12 @@ export async function activate(context: ExtensionContext) {
       commands.executeCommand(DAPPFORGE_COMMAND_NAME.focusSidebar)
       delayExecution(() => sidebarProvider?.streamTemplateCompletion('explain'))
     }),
-		commands.registerCommand(DAPPFORGE_COMMAND_NAME.inlineCompletionAccepted, () => {
-			completionProvider.setAcceptedLastCompletion()
-		}),
+    commands.registerCommand(
+      DAPPFORGE_COMMAND_NAME.inlineCompletionAccepted,
+      () => {
+        completionProvider.setAcceptedLastCompletion()
+      }
+    ),
     commands.registerCommand(DAPPFORGE_COMMAND_NAME.refactor, () => {
       commands.executeCommand(DAPPFORGE_COMMAND_NAME.focusSidebar)
       delayExecution(() =>
@@ -129,16 +126,32 @@ export async function activate(context: ExtensionContext) {
         true
       )
     }),
-    commands.registerCommand(DAPPFORGE_COMMAND_NAME.manageProviders, async () => {
+    commands.registerCommand(
+      DAPPFORGE_COMMAND_NAME.manageProviders,
+      async () => {
+        commands.executeCommand(
+          'setContext',
+          EXTENSION_CONTEXT_NAME.dappforgeManageProviders,
+          true
+        )
+        sidebarProvider.view?.webview.postMessage({
+          type: EVENT_NAME.dappforgeSetTab,
+          value: {
+            data: WEBUI_TABS.providers
+          }
+        } as ServerMessage<string>)
+      }
+    ),
+    commands.registerCommand(DAPPFORGE_COMMAND_NAME.apiDashboard, async () => {
       commands.executeCommand(
         'setContext',
-        EXTENSION_CONTEXT_NAME.dappforgeManageProviders,
+        EXTENSION_CONTEXT_NAME.dappforgeApiDashboard,
         true
       )
       sidebarProvider.view?.webview.postMessage({
         type: EVENT_NAME.dappforgeSetTab,
         value: {
-          data: WEBUI_TABS.providers
+          data: WEBUI_TABS.apiDashboard
         }
       } as ServerMessage<string>)
     }),
@@ -158,35 +171,35 @@ export async function activate(context: ExtensionContext) {
         } as ServerMessage<string>)
       }
     ),
-    commands.registerCommand(
-      DAPPFORGE_COMMAND_NAME.authenticate,
-      async () => {
-        commands.executeCommand(
-          'setContext',
-          EXTENSION_CONTEXT_NAME.dappforgeAuthentication,
-          true
-        )
-        sidebarProvider.view?.webview.postMessage({
-          type: EVENT_NAME.dappforgeSetTab,
-          value: {
-            data: WEBUI_TABS.authenticate
-          }
-        } as ServerMessage<string>)
-      }
-    ),
-    commands.registerCommand(DAPPFORGE_COMMAND_NAME.manageTemplates, async () => {
+    commands.registerCommand(DAPPFORGE_COMMAND_NAME.authenticate, async () => {
       commands.executeCommand(
         'setContext',
-        EXTENSION_CONTEXT_NAME.dappforgeManageTemplates,
+        EXTENSION_CONTEXT_NAME.dappforgeAuthentication,
         true
       )
       sidebarProvider.view?.webview.postMessage({
         type: EVENT_NAME.dappforgeSetTab,
         value: {
-          data: WEBUI_TABS.settings
+          data: WEBUI_TABS.authenticate
         }
       } as ServerMessage<string>)
     }),
+    commands.registerCommand(
+      DAPPFORGE_COMMAND_NAME.manageTemplates,
+      async () => {
+        commands.executeCommand(
+          'setContext',
+          EXTENSION_CONTEXT_NAME.dappforgeManageTemplates,
+          true
+        )
+        sidebarProvider.view?.webview.postMessage({
+          type: EVENT_NAME.dappforgeSetTab,
+          value: {
+            data: WEBUI_TABS.settings
+          }
+        } as ServerMessage<string>)
+      }
+    ),
     commands.registerCommand(DAPPFORGE_COMMAND_NAME.hideBackButton, () => {
       commands.executeCommand(
         'setContext',
@@ -288,25 +301,25 @@ export async function activate(context: ExtensionContext) {
     if (key == USER_STORAGE_KEY) {
       sidebarProvider.userUpdated()
     }
-  })  
+  })
 
-  if (config.get('enabled')) statusBar.show() 
+  if (config.get('enabled')) statusBar.show()
 
   // Update statusbar depeding on auth state
   checkAuthenticationStatus()
   //sidebarProvider.userUpdated()
 
   //vscode.workspace.onDidChangeConfiguration((event) => {
-    //if (event.affectsConfiguration('dappforge.email')) {
-    //  sidebarProvider.view?.webview.postMessage({
-    //    type: EVENT_NAME.dappforgeSetTab,
-    //    value: {
-    //      data: WEBUI_TABS.settings
-    //    }
-    //  } as ServerMessage<string>)
-    //  commands.executeCommand(DAPPFORGE_COMMAND_NAME.authenticate)
-    //  const newEmail = vscode.workspace.getConfiguration().get('dappforge.email');      
-    //  console.log('yyyyy onDidChangeConfiguration:', newEmail);
-    //}
-  //});  
+  //if (event.affectsConfiguration('dappforge.email')) {
+  //  sidebarProvider.view?.webview.postMessage({
+  //    type: EVENT_NAME.dappforgeSetTab,
+  //    value: {
+  //      data: WEBUI_TABS.settings
+  //    }
+  //  } as ServerMessage<string>)
+  //  commands.executeCommand(DAPPFORGE_COMMAND_NAME.authenticate)
+  //  const newEmail = vscode.workspace.getConfiguration().get('dappforge.email');
+  //  console.log('yyyyy onDidChangeConfiguration:', newEmail);
+  //}
+  //});
 }

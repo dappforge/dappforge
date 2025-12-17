@@ -1,4 +1,9 @@
-import { StreamRequest, RequestOptionsDappForge, dAppForgeRequestTypes, RequestBodyBase } from '../common/types'
+import {
+  StreamRequest,
+  RequestOptionsDappForge,
+  dAppForgeRequestTypes,
+  RequestBodyBase
+} from '../common/types'
 import { logStreamOptions, safeParseJsonResponse } from './utils'
 import { WebSocketHandler } from './websocket'
 import { updateTokenCount, getWebSocketUri, getStoredUser } from './auth-utils'
@@ -21,29 +26,32 @@ export async function completionAccepted(body: RequestBodyBase) {
   )
   const websocketBody = {
     userId: dAppForgeBody.userId,
-    requestType: dAppForgeRequestTypes.reduceCount,       
+    requestType: dAppForgeRequestTypes.reduceCount,
     request: '',
     authorization: dAppForgeBody.authorization,
-    accessToken: dAppForgeBody.accessToken,
+    accessToken: dAppForgeBody.accessToken
   }
-  const user = getStoredUser();
+  const user = getStoredUser()
   if (user?.subscriptionTokens == SUBSCRIPTION_UNLIMITED_TOKENS) return
   try {
     const response = await websocket?.sendRequest(websocketBody)
     if (typeof response === 'string') {
       if (response.length > 0) {
-        //logger.log(`------> completionAccepted response: ${response}`)
-        const jsonResponse: {  status: number, response: {error?: string, tokenCount?: string } } = JSON.parse(response)
+        logger.log(`------> completionAccepted response: ${response}`)
+        const jsonResponse: {
+          status: number
+          response: { error?: string; tokenCount?: string }
+        } = JSON.parse(response)
         if (jsonResponse.status != 200) {
           throw Error(jsonResponse.response.error)
         } else {
-          await updateTokenCount(Number(jsonResponse.response.tokenCount))  
+          await updateTokenCount(Number(jsonResponse.response.tokenCount))
         }
       }
     } else {
       throw new Error('Expected response to be of type string')
     }
-  } catch(e) {
+  } catch (e) {
     if (e instanceof Error) {
       logger.error(e)
     } else {
@@ -52,7 +60,10 @@ export async function completionAccepted(body: RequestBodyBase) {
   }
 }
 
-export async function sendAiApiRequest(body: RequestBodyBase, requestType: string) {
+export async function sendAiApiRequest(
+  body: RequestBodyBase,
+  requestType: string
+) {
   const dAppForgeBody = body as RequestOptionsDappForge
   const websocket: WebSocketHandler = await setupWebsocket(
     requestType,
@@ -62,18 +73,19 @@ export async function sendAiApiRequest(body: RequestBodyBase, requestType: strin
   )
   const websocketBody = {
     userId: dAppForgeBody.userId,
-    requestType: requestType,       
+    requestType: requestType,
     request: JSON.stringify(dAppForgeBody.request),
     authorization: dAppForgeBody.authorization,
-    accessToken: dAppForgeBody.accessToken,
+    accessToken: dAppForgeBody.accessToken
   }
   //console.log(`sendAiApiRequest websocketBody: ${JSON.stringify(websocketBody, undefined, 2)}`)
   try {
     const response = await websocket?.sendRequest(websocketBody)
     if (typeof response === 'string') {
       if (response.length > 0) {
-        //logger.log(`------> sendAiApiRequest response: ${response}`)
-        const jsonResponse: {  status: number, response: {error?: string } } = JSON.parse(response)
+        logger.log(`------> sendAiApiRequest response: ${response}`)
+        const jsonResponse: { status: number; response: { error?: string } } =
+          JSON.parse(response)
         if (jsonResponse.status != 200) {
           throw Error(jsonResponse.response.error)
         }
@@ -81,7 +93,7 @@ export async function sendAiApiRequest(body: RequestBodyBase, requestType: strin
     } else {
       throw new Error('Expected response to be of type string')
     }
-  } catch(e) {
+  } catch (e) {
     if (e instanceof Error) {
       logger.error(e)
     } else {
@@ -125,19 +137,19 @@ async function setupWebsocket(
     }
     webSocket = tokenCountWebSocket
   }
-  
+
   if (!webSocket) throw Error('Unable to create websocket')
 
   if (webSocket && webSocket.getNewUrl() !== url) webSocket?.setNewUrl(url)
 
-  if (newSocket) { 
+  if (newSocket) {
     await updateWebsocketConnection(
       requestType,
       authorization,
       accessToken,
       userId,
       webSocket
-    )  
+    )
   }
 
   return webSocket
@@ -152,18 +164,19 @@ export async function updateWebsocketConnection(
 ) {
   const websocketBody = {
     userId: userId,
-    requestType: dAppForgeRequestTypes.updateConnection,       
-    request: JSON.stringify({connectionType: requestType}),
+    requestType: dAppForgeRequestTypes.updateConnection,
+    request: JSON.stringify({ connectionType: requestType }),
     authorization: authorization,
-    accessToken: accessToken,
+    accessToken: accessToken
   }
   //console.log(`updateWebsocketConnection websocketBody: ${JSON.stringify(websocketBody, undefined, 2)}`)
   try {
     const response = await websocket?.sendRequest(websocketBody)
     if (typeof response === 'string') {
       if (response.length > 0) {
-        //logger.log(`------> updateWebsocketConnection response: ${response}`)
-        const jsonResponse: {  status: number, response: {error?: string } } = JSON.parse(response)
+        logger.log(`------> updateWebsocketConnection response: ${response}`)
+        const jsonResponse: { status: number; response: { error?: string } } =
+          JSON.parse(response)
         if (jsonResponse.status != 200) {
           throw Error(jsonResponse.response.error)
         }
@@ -171,13 +184,13 @@ export async function updateWebsocketConnection(
     } else {
       throw new Error('Expected response to be of type string')
     }
-  } catch(e) {
+  } catch (e) {
     if (e instanceof Error) {
       logger.error(e)
     } else {
       logger.log(`${e}`)
     }
-  }    
+  }
 }
 
 export async function streamResponse(request: StreamRequest) {
@@ -192,12 +205,14 @@ export async function streamResponse(request: StreamRequest) {
       const dAppForgeBody = body as RequestOptionsDappForge
       const websocketBody = {
         userId: dAppForgeBody.userId,
-        requestType: dAppForgeBody.requestType,       
+        requestType: dAppForgeBody.requestType,
         request: JSON.stringify(dAppForgeBody.request),
         authorization: dAppForgeBody.authorization,
-        accessToken: dAppForgeBody.accessToken,
-      }      
-      //logger.log(`~~~~~> streamResponse websocketBody: ${JSON.stringify(websocketBody)}`)
+        accessToken: dAppForgeBody.accessToken
+      }
+      logger.log(
+        `~~~~~> streamResponse websocketBody: ${JSON.stringify(websocketBody)}`
+      )
       webSocket = await setupWebsocket(
         dAppForgeBody.requestType,
         dAppForgeBody.authorization,
@@ -208,11 +223,20 @@ export async function streamResponse(request: StreamRequest) {
       onStart?.(controller)
 
       try {
-        const response = await webSocket?.sendRequest(websocketBody, onData, onEnd)
+        const response = await webSocket?.sendRequest(
+          websocketBody,
+          onData,
+          onEnd
+        )
         if (typeof response === 'string') {
           if (response.length > 0)
-            //logger.log(`<~~~~~ streamResponse response: ${response}`)            
-            await processStreamResponse(response, onData, onError ?? (error => console.error(error)), signal) 
+            logger.log(`<~~~~~ streamResponse response: ${response}`)
+          await processStreamResponse(
+            response,
+            onData,
+            onError ?? ((error) => console.error(error)),
+            signal
+          )
         } else {
           throw new Error('Expected response to be of type string')
         }
@@ -230,7 +254,7 @@ export async function streamResponse(request: StreamRequest) {
         method: options.method,
         headers: options.headers,
         body: JSON.stringify(body),
-        signal: controller.signal,
+        signal: controller.signal
       }
 
       const response = await fetch(url, fetchOptions)
@@ -244,7 +268,7 @@ export async function streamResponse(request: StreamRequest) {
       }
 
       onStart?.(controller)
-      
+
       const reader = response.body
         .pipeThrough(new TextDecoderStream())
         .getReader()
@@ -269,8 +293,8 @@ export async function streamResponse(request: StreamRequest) {
 
 // Unified processing for WebSocket and fetch responses
 async function processStreamResponse(
-  response: string, 
-  onData: (data: unknown) => void, 
+  response: string,
+  onData: (data: unknown) => void,
   onError: (error: Error) => void,
   signal: AbortSignal
 ) {
@@ -289,8 +313,11 @@ async function processStreamResponse(
         const json = safeParseJsonResponse(line) // Safely parse JSON
         if (json) {
           if (Number(json.status) !== 200) {
-            const errorJson: {  status: number, response: {error?: string } } = JSON.parse(response)
-            throw Error(`Status: ${errorJson.status} Error: ${errorJson.response.error}`)
+            const errorJson: { status: number; response: { error?: string } } =
+              JSON.parse(response)
+            throw Error(
+              `Status: ${errorJson.status} Error: ${errorJson.response.error}`
+            )
           }
           onData(json) // Call onData for valid JSON data
         }
@@ -305,8 +332,11 @@ async function processStreamResponse(
         const json = safeParseJsonResponse(buffer) // Safely parse JSON
         if (json) {
           if (Number(json.status) !== 200) {
-            const errorJson: {  status: number, response: {error?: string } } = JSON.parse(response)
-            throw Error(`Status: ${errorJson.status} Error: ${errorJson.response.error}`)
+            const errorJson: { status: number; response: { error?: string } } =
+              JSON.parse(response)
+            throw Error(
+              `Status: ${errorJson.status} Error: ${errorJson.response.error}`
+            )
           }
           onData(json)
         }
@@ -321,12 +351,12 @@ async function processStreamResponse(
 
 // Processing for Fetch reader responses
 async function processFetchResponse(
-  reader: ReadableStreamDefaultReader<string>, 
-  onData: (data: unknown) => void, 
+  reader: ReadableStreamDefaultReader<string>,
+  onData: (data: unknown) => void,
   signal: AbortSignal
 ) {
   let buffer = ''
-  
+
   try {
     while (!signal.aborted) {
       if (signal.aborted) break
@@ -360,4 +390,3 @@ async function processFetchResponse(
     throw new Error('Error processing fetch response.')
   }
 }
-
